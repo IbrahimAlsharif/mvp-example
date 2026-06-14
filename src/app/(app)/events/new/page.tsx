@@ -412,10 +412,17 @@ function NewEventInner() {
           onClick={onSave}
           disabled={!canSave}
           data-testid="save-event"
-          className="tap-target inline-flex items-center justify-center rounded-2xl bg-accent-gradient px-8 py-3.5 font-bold text-white shadow-accent transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+          className="tap-target inline-flex items-center justify-center rounded-2xl bg-accent-gradient px-8 py-3.5 font-bold text-white shadow-accent transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
         >
           {submitting ? t("saving") : uploading ? t("uploadPending") : t("save")}
         </button>
+
+        {/* Polite status region: announces in-progress upload/save to AT so a
+            non-sighted user isn't left guessing; success is announced on the
+            timeline after the durable commit/redirect (US-0.4 AC-10). */}
+        <p role="status" aria-live="polite" className="sr-only">
+          {submitting ? t("saving") : uploading ? t("uploadPending") : ""}
+        </p>
       </div>
     </main>
   );

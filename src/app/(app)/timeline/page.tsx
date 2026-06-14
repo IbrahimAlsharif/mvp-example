@@ -15,9 +15,16 @@ import type { EventVM } from "@/lib/events/view";
  * session (AC-15). Offers the "+ Add event" entry (AC-1). The cosmic theme is
  * scoped to this page via `.timeline-cosmic`.
  */
-export default async function TimelinePage() {
+export default async function TimelinePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ saved?: string }>;
+}) {
   const account = await getCurrentAccount();
   if (!account || account.status !== "ACTIVE") redirect("/signin");
+
+  const sp = (await searchParams) ?? {};
+  const justSaved = sp.saved === "1";
 
   const t = await getTranslations("cosmic");
   const tn = await getTranslations("nav");
@@ -48,6 +55,13 @@ export default async function TimelinePage() {
 
   return (
     <div className="timeline-cosmic flex h-screen flex-col overflow-hidden">
+      {/* Announce a just-completed durable save to assistive tech only AFTER the
+          server-confirmed write + redirect landed here (US-0.4 AC-10). */}
+      {justSaved && (
+        <p role="status" aria-live="polite" className="sr-only">
+          {t("saveAnnounce")}
+        </p>
+      )}
       <header className="shrink-0 border-b border-cosmic-border bg-cosmic-bg/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-5 py-3" dir="rtl">
           <div className="flex items-center gap-2">
