@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAccount, Unauthorized } from "@/lib/auth/session";
-import { buildAccountExport } from "@/lib/events/export";
+import { buildAccountExport, verifyExportIntegrity } from "@/lib/events/export";
 import { emit } from "@/lib/telemetry";
 
 /**
@@ -19,7 +19,13 @@ export async function GET() {
   }
 
   const data = await buildAccountExport(account.id);
+  // Self-verify the manifest before delivery (US-1.4 AC-4). A read-only check;
+  // it never mutates the source. A mismatch is surfaced as a content-blind
+  // signal rather than silently shipping a corrupt archive.
+  const problems = verifyExportIntegrity(data);
   emit("account_export", { event_count: data.eventCount });
+  emit("export_integrity_verified", { result: problems.length === 0 ? "ok" : "mismatch" });
+  emit("export_completed", { media_count: data.manifest.mediaCount });
 
   const stamp = data.exportedAt.slice(0, 10);
   const filename = `human-timeline-export-${stamp}.json`;

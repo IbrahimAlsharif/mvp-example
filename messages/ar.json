@@ -173,6 +173,10 @@
     "status_pending": "بالانتظار…",
     "status_uploading": "جارٍ الرفع…",
     "status_saving": "جارٍ الحفظ…",
+    "dupSkipped": "مكرر — تم تخطيه",
+    "reconcileTitle": "ملخّص الاستيراد",
+    "reconcileBody": "المحدد: {selected} · المستورد: {imported} · الفاشل: {failed} · المكرر المتخطّى: {duplicate}",
+    "reviewFlag": "بعض العناصر استُخدم لها تاريخ احتياطي — راجِعها وصحّح تاريخها إن لزم.",
     "doneCta": "تم — اعرض الخط الزمني ({done})"
   },
   "cosmic": {

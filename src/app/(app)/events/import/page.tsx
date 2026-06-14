@@ -20,10 +20,12 @@ import { safeEmit } from "@/lib/telemetry";
  *                       commits via the atomic, idempotent /api/events; a failed
  *                       item is reported, never silently dropped).
  */
+type ItemResult = "done" | "failed" | "dupskipped";
 type Row = {
   name: string;
-  status: "pending" | "uploading" | "saving" | "done" | "failed";
+  status: "pending" | "uploading" | "saving" | "done" | "failed" | "dupskipped";
   date?: string;
+  needsReview?: boolean;
   reason?: string;
 };
 
@@ -32,20 +34,23 @@ export default function BulkImportPage() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [running, setRunning] = useState(false);
+  const [reconciled, setReconciled] = useState(false);
 
   const done = rows.filter((r) => r.status === "done").length;
   const failed = rows.filter((r) => r.status === "failed").length;
+  const dupskipped = rows.filter((r) => r.status === "dupskipped").length;
 
   function patch(i: number, next: Partial<Row>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...next } : r)));
   }
 
-  async function importOne(file: File, i: number): Promise<boolean> {
+  async function importOne(file: File, i: number): Promise<ItemResult> {
     patch(i, { status: "uploading" });
-    // Backfill the original capture date from EXIF; fall back to local today.
+    // Backfill the original capture date from EXIF; flag implausible/missing
+    // dates with a fallback so the item is imported, never dropped (AC-3).
     const exif = await readExif(file);
-    const date = exif.date ?? dayKey(new Date());
-    patch(i, { date });
+    const resolved = resolveImportDate(exif.date, Date.now(), new Date());
+    patch(i, { date: resolved.date, needsReview: resolved.needsReview });
 
     let publicId: string;
     try {
@@ -53,7 +58,7 @@ export default function BulkImportPage() {
       publicId = handle.publicId;
     } catch (e) {
       patch(i, { status: "failed", reason: e instanceof UploadError ? e.message : "upload_failed" });
-      return false;
+      return "failed";
     }
 
     patch(i, { status: "saving" });
@@ -62,23 +67,25 @@ export default function BulkImportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          occurredOn: new Date(`${date}T12:00:00.000Z`).toISOString(),
-          circle: "ME_ONLY", // import default — never over-share
-          legacyConsent: false,
+          occurredOn: new Date(`${resolved.date}T12:00:00.000Z`).toISOString(),
+          circle: "ME_ONLY", // import default — never over-share (G1)
+          legacyConsent: false, // per-item consent recorded at ingest, not-yet-released (G5)
           mediaPublicIds: [publicId],
           submitKey: newUploadKey(),
-          location: exif.lat != null && exif.lng != null ? { lat: exif.lat, lng: exif.lng } : null,
+          // Geo-minimization (AC-13): do NOT auto-carry embedded GPS into an
+          // imported item — location stays empty/non-default-visible at ingest.
+          location: null,
         }),
       });
       if (!res.ok) {
         patch(i, { status: "failed", reason: `save_${res.status}` });
-        return false;
+        return "failed";
       }
       patch(i, { status: "done" });
-      return true;
+      return "done";
     } catch {
       patch(i, { status: "failed", reason: "save_failed" });
-      return false;
+      return "failed";
     }
   }
 
@@ -87,26 +94,70 @@ export default function BulkImportPage() {
     const list = Array.from(files);
     setRows(list.map((f) => ({ name: f.name, status: "pending" })));
     setRunning(true);
-    // import_started carries only the structural item count (G4) — no filenames.
-    safeEmit("import_started", { item_count: list.length });
-    // Sequential to keep drop-protection legible (each item commits before next).
-    let success = 0;
-    let dropped = 0;
-    for (let i = 0; i < list.length; i++) {
-      const ok = await importOne(list[i], i);
-      if (ok) success++;
-      else dropped++;
+    setReconciled(false);
+    const hasVideo = list.some((f) => f.type.startsWith("video/"));
+    // bulk_import_started: structural count only (G4) — no filenames/content.
+    safeEmit("bulk_import_started", { selected_count: list.length, has_video: hasVideo });
+
+    // Cross-session/device dedupe (AC-9): hash each file and ask the server which
+    // checksums already exist on this account's timeline, BEFORE uploading, so a
+    // re-imported library is skipped (not silently discarded, not duplicated).
+    const checksums = await Promise.all(list.map((f) => computeChecksum(f)));
+    let duplicates = new Set<string>();
+    try {
+      const res = await fetch("/api/import/dedupe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checksums }),
+      });
+      if (res.ok) duplicates = new Set<string>((await res.json()).duplicates ?? []);
+    } catch {
+      // Dedupe is best-effort; a failure just means no items are pre-skipped.
     }
-    // import_completed reconciles N selected = N succeeded + N dropped (US-0.3
-    // taxonomy). A nonzero dropped_count is a durability/trust signal (G2),
-    // distinct from telemetry-transport loss. Completing an import attains the
-    // populated_timeline funnel stage.
-    safeEmit("import_completed", {
-      item_count: list.length,
-      success_count: success,
-      dropped_count: dropped,
+
+    // Sequential per-item: each commits before the next (legible drop-protection).
+    let imported = 0;
+    let failedCount = 0;
+    let dupCount = 0;
+    let exifDates = 0;
+    let fallbackDates = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (duplicates.has(checksums[i])) {
+        patch(i, { status: "dupskipped" });
+        dupCount++;
+        continue;
+      }
+      const result = await importOne(list[i], i);
+      if (result === "done") imported++;
+      else failedCount++;
+      // Tally date provenance from the row the item just wrote.
+      setRows((prev) => {
+        const r = prev[i];
+        if (r?.needsReview) fallbackDates++;
+        else if (r?.status === "done") exifDates++;
+        return prev;
+      });
+      if (result === "failed") {
+        safeEmit("bulk_import_item_failed", { failure_reason: "persistence", retry_offered: true });
+      }
+    }
+
+    // Reconciliation receipt (AC-6): N selected = N imported + N failed + N dup.
+    safeEmit("bulk_import_completed", {
+      imported_count: imported,
+      failed_count: failedCount,
+      duplicate_skipped_count: dupCount,
+      exif_date_count: exifDates,
+      fallback_date_count: fallbackDates,
     });
-    if (success > 0) safeEmit("funnel_stage_attained", { stage: "populated_timeline" });
+    safeEmit("bulk_import_reconciled", {
+      selected_count: list.length,
+      imported_count: imported,
+      failed_count: failedCount,
+    });
+    // Populated-timeline funnel stage on a successful import (US-0.3).
+    if (imported > 0) safeEmit("funnel_stage_attained", { stage: "populated_timeline" });
+    setReconciled(true);
     setRunning(false);
   }
 
@@ -151,14 +202,35 @@ export default function BulkImportPage() {
                   }
                 >
                   {r.status === "done"
-                    ? `✓ ${r.date ?? ""}`
+                    ? `✓ ${r.date ?? ""}${r.needsReview ? " ⚑" : ""}`
                     : r.status === "failed"
                       ? `✕ ${r.reason ?? ""}`
-                      : t(`status_${r.status}` as "status_pending")}
+                      : r.status === "dupskipped"
+                        ? `⊘ ${t("dupSkipped")}`
+                        : t(`status_${r.status}` as "status_pending")}
                 </span>
               </li>
             ))}
           </ul>
+
+          {/* Reconciliation receipt (AC-6): proves N selected = N imported +
+              N failed + N duplicate-skipped, item-accounted — no silent drop. */}
+          {reconciled && (
+            <div role="status" aria-live="polite" className="mt-4 rounded-xl border border-cosmic-border bg-cosmic-surface/60 p-3 text-sm">
+              <p className="font-bold">{t("reconcileTitle")}</p>
+              <p className="mt-1 text-cosmic-muted">
+                {t("reconcileBody", {
+                  selected: rows.length,
+                  imported: done,
+                  failed,
+                  duplicate: dupskipped,
+                })}
+              </p>
+              {rows.some((r) => r.needsReview && r.status === "done") && (
+                <p className="mt-1 text-amber-300">{t("reviewFlag")}</p>
+              )}
+            </div>
+          )}
 
           {!running && (
             <button
