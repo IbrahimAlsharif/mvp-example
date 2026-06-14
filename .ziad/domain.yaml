@@ -1,0 +1,55 @@
+# Ziad domain identity — created by /ziad-init
+id: human-timeline-network
+schema_version: 1
+name: "Digital Legacy & Memory Preservation"
+created: 2026-06-14
+updated: 2026-06-14
+
+domain:
+  name: "Digital Legacy & Memory Preservation"
+  description: >
+    Helping individuals and families capture, organize, protect, and pass down
+    life memories and legacy across generations. The domain spans durable
+    multimedia preservation, privacy-controlled family sharing, chronological
+    life navigation, time-delayed/posthumous delivery (future capsules), and
+    decades-scale digital inheritance. Analysis serves the decision of whether
+    a memory-preservation product earns and keeps family trust well enough that
+    people continuously add and revisit life events.
+  language: "Arabic"
+
+analyst_persona:
+  role: "Digital Legacy & Memory Specialist"
+  organization_type: "Family memory-preservation & digital-legacy practice"
+  primary_output: "Memory-preservation & legacy-readiness assessments"
+  time_pressure: medium
+  workflow_anchor: >
+    Opens the product when a family wants to preserve intimate memories of
+    children and relatives, and needs to decide whether it is trustworthy and
+    durable enough to hold those memories for decades and hand them to the next
+    generation.
+
+entities:
+  - "Memory owners / account holders"
+  - "Family members & shared-circle participants"
+  - "Heirs / designated legacy recipients"
+  - "Life events & timeline entries"
+  - "Media assets (photo / video / voice)"
+  - "Future capsules (time-delayed content)"
+
+topics:
+  - "Privacy circles & consent (Me Only / Family / Public)"
+  - "Media durability & permanent data-loss prevention"
+  - "Continuous capture habit & timeline revisit engagement"
+  - "Future capsules, inheritance & posthumous delivery"
+  - "Decades-scale preservation, portability & vendor lock-in"
+  - "Child-safety & GDPR/PII exposure"
+
+source_priorities:
+  tier_1: "Primary product/vendor sources, regulatory & standards bodies (GDPR/PII guidance, child-safety/CSAM standards, digital-preservation standards), and direct competitor product documentation"
+  tier_2: "Established competitor platforms & domain practitioners (GoodTrust, My Heartspace, SafeBeyond, FamilyPine, Evaheld, StoryWorth), reputable industry analysis and app-store evidence"
+  tier_3: "General press, blog roundups, listicles, and unverified user commentary"
+
+platform_context:
+  name: "Human Timeline Network"
+  description: "A living timeline of a person's life, memories, relationships, and legacy across mobile and web — 'Netflix for human lives and family history' — with privacy circles, multimedia memories, future capsules, and cross-generational inheritance."
+  stage: "early product"
