@@ -71,5 +71,27 @@
     "today": "اليوم",
     "yesterday": "أمس",
     "daysAgo": "قبل {n} يوماً"
+  },
+  "timeline": {
+    "zoomDay": "يوم",
+    "zoomWeek": "أسبوع",
+    "zoomMonth": "شهر",
+    "zoomYear": "سنة",
+    "zoomIn": "تكبير",
+    "zoomOut": "تصغير",
+    "fit": "عرض الكل",
+    "viewTimeline": "الخط الزمني",
+    "viewMap": "الخريطة",
+    "filters": "عوامل التصفية",
+    "filterCircle": "الدائرة",
+    "filterRange": "النطاق الزمني",
+    "filterFrom": "من",
+    "filterTo": "إلى",
+    "filterHasMedia": "يحتوي صورة",
+    "filterHasLocation": "يحتوي موقعاً",
+    "clearFilters": "مسح التصفية",
+    "noResults": "لا توجد أحداث تطابق التصفية الحالية.",
+    "noLocatedEvents": "لا توجد أحداث ذات موقع ضمن النطاق الحالي.",
+    "showing": "{count} من {total} حدثاً"
   }
 }

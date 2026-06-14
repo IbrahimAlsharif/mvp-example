@@ -10,6 +10,62 @@ body {
   @apply bg-app-canvas bg-fixed text-neutral-900 antialiased;
 }
 
+/* vis-timeline: brand the items + axis to match the app identity. */
+.vis-timeline {
+  border: none;
+  font-family: inherit;
+}
+.vis-item.vis-event {
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 60%, #f97316 140%);
+  color: #fff;
+  border-radius: 9999px;
+  box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.5);
+}
+.vis-item.vis-event.vis-selected {
+  border-color: #f97316;
+  box-shadow: 0 8px 20px -6px rgba(249, 115, 22, 0.55);
+}
+.vis-item.vis-event .vis-event-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.vis-item.vis-cluster {
+  background: #1e40af;
+  border-color: #1e40af;
+  color: #fff;
+  border-radius: 9999px;
+}
+.vis-time-axis .vis-text {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+.vis-time-axis .vis-grid.vis-minor {
+  border-color: #f1f5f9;
+}
+.vis-current-time {
+  background-color: #f97316;
+}
+
+/* Touch hit-area: on coarse pointers (phones/tablets) guarantee a ≥44px tap
+   target per WCAG 2.5.5, without enlarging the small filter/zoom pills on
+   desktop. Uses a centred pseudo-element so the visual size is unchanged. */
+@media (pointer: coarse) {
+  .tap-target {
+    position: relative;
+  }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    inset: 50%;
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* Respect users who prefer less motion — disable the decorative animations. */
 @media (prefers-reduced-motion: reduce) {
   *,

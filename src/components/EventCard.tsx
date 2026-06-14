@@ -2,18 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PrivacyCircle } from "@prisma/client";
 import { CircleBadge } from "./CircleBadge";
 import { absoluteDate, daysAgo } from "@/lib/events/date";
-
-type Media = { publicId: string };
-type EventVM = {
-  id: string;
-  note: string | null;
-  occurredOn: string | Date;
-  circle: PrivacyCircle;
-  media: Media[];
-};
+import type { EventVM } from "@/lib/events/view";
 
 // A modern, social-network-style event card: owner header (avatar + name +
 // relative date + privacy badge), body note, full-width media grid, and an

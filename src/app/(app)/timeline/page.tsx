@@ -3,8 +3,8 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
 import { listOwnEvents } from "@/lib/events/create";
-import { EventCard } from "@/components/EventCard";
-import { absoluteDate, dayKey, daysAgo } from "@/lib/events/date";
+import { TimelineView } from "@/components/timeline/TimelineView";
+import type { EventVM } from "@/lib/events/view";
 import { SignOutButton } from "./SignOutButton";
 
 /**
@@ -17,25 +17,21 @@ export default async function TimelinePage() {
   if (!account || account.status !== "ACTIVE") redirect("/signin");
 
   const t = await getTranslations("nav");
-  const te = await getTranslations("event");
   const events = await listOwnEvents(account.id);
   // Owner display name: local-part of the email (no displayName field in schema).
   const ownerName = account.email.split("@")[0];
 
-  // Bucket events (already newest-day-first) into one group per calendar day so
-  // the timeline reads as dated sections down a vertical spine, not a flat feed.
-  const groups: { key: string; label: string; events: typeof events }[] = [];
-  for (const e of events) {
-    const key = dayKey(e.occurredOn);
-    let group = groups.find((g) => g.key === key);
-    if (!group) {
-      const days = daysAgo(e.occurredOn);
-      const label = days <= 0 ? te("today") : days === 1 ? te("yesterday") : absoluteDate(e.occurredOn);
-      group = { key, label, events: [] };
-      groups.push(group);
-    }
-    group.events.push(e);
-  }
+  // Serializable view-models for the client timeline (Date → ISO across the
+  // RSC boundary; surface location coordinates for the map).
+  const vm: EventVM[] = events.map((e) => ({
+    id: e.id,
+    note: e.note,
+    occurredOn: e.occurredOn.toISOString(),
+    circle: e.circle,
+    media: e.media.map((m) => ({ publicId: m.publicId })),
+    lat: e.locationLat,
+    lng: e.locationLng,
+  }));
 
   return (
     <div className="min-h-screen">
@@ -52,7 +48,7 @@ export default async function TimelinePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/events/new"
-              className="rounded-xl bg-accent-gradient px-4 py-2 text-sm font-bold text-white shadow-accent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0"
+              className="whitespace-nowrap rounded-xl bg-accent-gradient px-4 py-2 text-sm font-bold text-white shadow-accent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0"
               data-testid="add-event"
             >
               {t("addEvent")}
@@ -62,7 +58,7 @@ export default async function TimelinePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-6 py-8">
+      <main className="mx-auto max-w-4xl px-6 py-8">
         <p
           data-testid="default-circle"
           data-circle={account.defaultCircle}
@@ -89,32 +85,7 @@ export default async function TimelinePage() {
             </Link>
           </div>
         ) : (
-          // Vertical timeline: a spine runs down the inline-start edge; each dated
-          // group hangs a dot + header off it, with its event cards beneath.
-          <ol
-            className="relative flex flex-col gap-8 border-neutral-200 ps-6 [border-inline-start-width:2px]"
-            data-testid="timeline-list"
-          >
-            {groups.map((g, gi) => (
-              <li key={g.key} data-testid="timeline-group" data-day={g.key}>
-                {/* dot on the spine + date header */}
-                <div className="relative mb-3 flex items-center gap-2">
-                  <span className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-brand-gradient shadow-brand [inset-inline-start:-1.78rem]" />
-                  <h2 className="text-sm font-bold text-brand-800">{g.label}</h2>
-                </div>
-                <div className="flex flex-col gap-5">
-                  {g.events.map((e, i) => (
-                    <EventCard
-                      key={e.id}
-                      event={e}
-                      ownerName={ownerName}
-                      index={gi + i}
-                    />
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ol>
+          <TimelineView events={vm} ownerName={ownerName} />
         )}
       </main>
     </div>
