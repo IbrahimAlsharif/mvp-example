@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PrivacyCircle } from "@prisma/client";
 import { CircleBadge } from "./CircleBadge";
+import { absoluteDate, daysAgo } from "@/lib/events/date";
 
 type Media = { publicId: string };
 type EventVM = {
@@ -31,15 +32,16 @@ export function EventCard({
 
   const initial = ownerName.trim().charAt(0).toUpperCase() || "؟";
   const photos = event.media;
+  const hint = relativeHint(event.occurredOn);
 
-  function relativeDate(value: string | Date): string {
-    const d = new Date(value);
-    const now = new Date();
-    const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  // Short relative hint shown alongside the absolute date (null once it's old
+  // enough that the absolute date carries on its own).
+  function relativeHint(value: string | Date): string | null {
+    const days = daysAgo(value);
     if (days <= 0) return t("today");
     if (days === 1) return t("yesterday");
     if (days < 7) return t("daysAgo", { n: days });
-    return d.toLocaleDateString("ar");
+    return null;
   }
 
   return (
@@ -56,7 +58,13 @@ export function EventCard({
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-bold text-neutral-900">{ownerName}</span>
-          <time className="text-xs text-neutral-400">{relativeDate(event.occurredOn)}</time>
+          <time
+            dateTime={new Date(event.occurredOn).toISOString()}
+            className="text-xs text-neutral-400"
+          >
+            {absoluteDate(event.occurredOn)}
+            {hint && <span className="text-neutral-300"> · {hint}</span>}
+          </time>
         </div>
         <CircleBadge circle={event.circle} />
       </header>

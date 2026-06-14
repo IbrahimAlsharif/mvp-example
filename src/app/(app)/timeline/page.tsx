@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
 import { listOwnEvents } from "@/lib/events/create";
 import { EventCard } from "@/components/EventCard";
+import { absoluteDate, dayKey, daysAgo } from "@/lib/events/date";
 import { SignOutButton } from "./SignOutButton";
 
 /**
@@ -16,9 +17,25 @@ export default async function TimelinePage() {
   if (!account || account.status !== "ACTIVE") redirect("/signin");
 
   const t = await getTranslations("nav");
+  const te = await getTranslations("event");
   const events = await listOwnEvents(account.id);
   // Owner display name: local-part of the email (no displayName field in schema).
   const ownerName = account.email.split("@")[0];
+
+  // Bucket events (already newest-day-first) into one group per calendar day so
+  // the timeline reads as dated sections down a vertical spine, not a flat feed.
+  const groups: { key: string; label: string; events: typeof events }[] = [];
+  for (const e of events) {
+    const key = dayKey(e.occurredOn);
+    let group = groups.find((g) => g.key === key);
+    if (!group) {
+      const days = daysAgo(e.occurredOn);
+      const label = days <= 0 ? te("today") : days === 1 ? te("yesterday") : absoluteDate(e.occurredOn);
+      group = { key, label, events: [] };
+      groups.push(group);
+    }
+    group.events.push(e);
+  }
 
   return (
     <div className="min-h-screen">
@@ -72,13 +89,32 @@ export default async function TimelinePage() {
             </Link>
           </div>
         ) : (
-          <ul className="flex flex-col gap-5" data-testid="timeline-list">
-            {events.map((e, i) => (
-              <li key={e.id}>
-                <EventCard event={e} ownerName={ownerName} index={i} />
+          // Vertical timeline: a spine runs down the inline-start edge; each dated
+          // group hangs a dot + header off it, with its event cards beneath.
+          <ol
+            className="relative flex flex-col gap-8 border-neutral-200 ps-6 [border-inline-start-width:2px]"
+            data-testid="timeline-list"
+          >
+            {groups.map((g, gi) => (
+              <li key={g.key} data-testid="timeline-group" data-day={g.key}>
+                {/* dot on the spine + date header */}
+                <div className="relative mb-3 flex items-center gap-2">
+                  <span className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-brand-gradient shadow-brand [inset-inline-start:-1.78rem]" />
+                  <h2 className="text-sm font-bold text-brand-800">{g.label}</h2>
+                </div>
+                <div className="flex flex-col gap-5">
+                  {g.events.map((e, i) => (
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      ownerName={ownerName}
+                      index={gi + i}
+                    />
+                  ))}
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
         )}
       </main>
     </div>
