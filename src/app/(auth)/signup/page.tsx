@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { AuthCard, Field, SubmitButton, Alert, Divider } from "../ui";
 
 export default function SignupPage() {
   return (
@@ -64,68 +65,67 @@ function SignupInner() {
 
   if (sent) {
     return (
-      <main className="mx-auto max-w-md p-8">
-        <h1 className="mb-4 text-2xl font-bold">{t("signupTitle")}</h1>
-        <p role="status" className="rounded-lg bg-green-50 p-4 text-green-800">
-          {t("confirmSent")}
-        </p>
-      </main>
+      <AuthCard title={t("signupTitle")}>
+        <Alert tone="success">{t("confirmSent")}</Alert>
+        <Link
+          href="/signin"
+          className="mt-5 block text-center text-sm text-neutral-600 underline-offset-2 hover:underline"
+        >
+          {t("backToSignin")}
+        </Link>
+      </AuthCard>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-2 text-2xl font-bold">{t("signupTitle")}</h1>
-      <p className="mb-6 text-sm text-neutral-600">{t("inviteOnly")}</p>
+    <AuthCard title={t("signupTitle")} subtitle={t("inviteOnly")}>
       {socialMismatch && (
-        <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-          {t("inviteInvalid")}
-        </p>
+        <div className="mb-4">
+          <Alert tone="info">{t("inviteInvalid")}</Alert>
+        </div>
       )}
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">{t("email")}</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-neutral-300 p-2.5"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">{t("password")}</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-neutral-300 p-2.5"
-          />
-        </label>
-        {error && (
-          <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-neutral-900 px-5 py-2.5 text-white disabled:opacity-50"
-        >
+        <Field
+          label={t("email")}
+          type="email"
+          required
+          autoComplete="email"
+          placeholder={t("emailPlaceholder")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Field
+          label={t("password")}
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+          hint={t("passwordHint")}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <Alert tone="error">{error}</Alert>}
+        <SubmitButton busy={busy} busyLabel={t("submitting")}>
           {t("submit")}
-        </button>
+        </SubmitButton>
       </form>
-      <a
-        href="/api/auth/oauth/google"
-        className="mt-3 block rounded-lg border border-neutral-300 px-5 py-2.5 text-center"
+
+      <div className="mt-5">
+        <Divider label={t("orDivider")} />
+        <a
+          href="/api/auth/oauth/google"
+          className="mt-4 flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-5 py-2.5 font-medium text-neutral-800 transition hover:bg-neutral-50"
+        >
+          {t("withGoogle")}
+        </a>
+      </div>
+
+      <Link
+        href="/signin"
+        className="mt-6 block text-center text-sm text-neutral-600 underline-offset-2 hover:underline"
       >
-        {t("withGoogle")}
-      </a>
-      <Link href="/signin" className="mt-6 block text-sm text-neutral-600 underline">
         {t("alreadyHaveAccount")}
       </Link>
-    </main>
+    </AuthCard>
   );
 }

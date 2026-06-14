@@ -51,6 +51,13 @@ Media upload/serving (US-1.2 / US-3.3) needs an S3-compatible endpoint at
 | `npm run reap` | Abandoned-upload reaper (US-1.2) |
 | `npm run typecheck` | `tsc --noEmit` |
 
+### Troubleshooting
+
+- **Pages render with no styling (raw inputs, no Tailwind).** The `next dev`
+  cache (`.next/`) can go stale if files are added/moved while the dev server is
+  running — the CSS bundle then 404s back to the HTML shell. Fix: stop the dev
+  server, `rm -rf .next`, then `npm run dev` again.
+
 ## Feature docs
 
 - [Architecture Overview](docs/architecture.md) — how the whole slice fits together end to end.

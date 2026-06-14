@@ -3,6 +3,8 @@
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { AuthCard, Field, SubmitButton, Alert } from "../ui";
 
 export default function ResetPage() {
   return (
@@ -36,7 +38,7 @@ function ResetInner() {
     const data = await res.json();
     setBusy(false);
     if (!data.ok) {
-      setError(t("inviteInvalid"));
+      setError(t("resetFailed"));
       return;
     }
     if (token) {
@@ -48,43 +50,47 @@ function ResetInner() {
 
   if (done) {
     return (
-      <main className="mx-auto max-w-md p-8">
-        <h1 className="mb-4 text-2xl font-bold">{t("resetTitle")}</h1>
-        <p role="status" className="rounded-lg bg-green-50 p-4 text-green-800">
-          {t("resetSent")}
-        </p>
-      </main>
+      <AuthCard title={t("resetTitle")}>
+        <Alert tone="success">{t("resetSent")}</Alert>
+        <Link
+          href="/signin"
+          className="mt-5 block text-center text-sm text-neutral-600 underline-offset-2 hover:underline"
+        >
+          {t("backToSignin")}
+        </Link>
+      </AuthCard>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-6 text-2xl font-bold">{t("resetTitle")}</h1>
+    <AuthCard
+      title={t("resetTitle")}
+      subtitle={token ? t("resetSubtitleComplete") : t("resetSubtitleRequest")}
+    >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">{token ? t("password") : t("email")}</span>
-          <input
-            type={token ? "password" : "email"}
-            required
-            minLength={token ? 8 : undefined}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="rounded-lg border border-neutral-300 p-2.5"
-          />
-        </label>
-        {error && (
-          <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-neutral-900 px-5 py-2.5 text-white disabled:opacity-50"
-        >
+        <Field
+          label={token ? t("newPassword") : t("email")}
+          type={token ? "password" : "email"}
+          required
+          minLength={token ? 8 : undefined}
+          autoComplete={token ? "new-password" : "email"}
+          placeholder={token ? undefined : t("emailPlaceholder")}
+          hint={token ? t("passwordHint") : undefined}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        {error && <Alert tone="error">{error}</Alert>}
+        <SubmitButton busy={busy} busyLabel={t("submitting")}>
           {t("submit")}
-        </button>
+        </SubmitButton>
       </form>
-    </main>
+
+      <Link
+        href="/signin"
+        className="mt-6 block text-center text-sm text-neutral-600 underline-offset-2 hover:underline"
+      >
+        {t("backToSignin")}
+      </Link>
+    </AuthCard>
   );
 }

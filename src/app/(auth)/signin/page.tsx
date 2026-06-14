@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { AuthCard, Field, SubmitButton, Alert } from "../ui";
 
 export default function SigninPage() {
+  return (
+    <Suspense>
+      <SigninInner />
+    </Suspense>
+  );
+}
+
+function SigninInner() {
   const t = useTranslations("auth");
   const router = useRouter();
+  const params = useSearchParams();
+  const justReset = params.get("reset") === "1";
+  const alreadyExists = params.get("exists") === "1";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,52 +38,56 @@ export default function SigninPage() {
     const data = await res.json();
     setBusy(false);
     if (!data.ok) {
-      setError(t("inviteInvalid"));
+      setError(t("signinFailed"));
       return;
     }
     router.push("/timeline");
   }
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-6 text-2xl font-bold">{t("signinTitle")}</h1>
+    <AuthCard title={t("signinTitle")} subtitle={t("signinSubtitle")}>
+      {justReset && (
+        <div className="mb-4">
+          <Alert tone="success">{t("resetDoneHint")}</Alert>
+        </div>
+      )}
+      {alreadyExists && (
+        <div className="mb-4">
+          <Alert tone="info">{t("accountExists")}</Alert>
+        </div>
+      )}
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">{t("email")}</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-neutral-300 p-2.5"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-sm">{t("password")}</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-neutral-300 p-2.5"
-          />
-        </label>
-        {error && (
-          <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-neutral-900 px-5 py-2.5 text-white disabled:opacity-50"
-        >
+        <Field
+          label={t("email")}
+          type="email"
+          required
+          autoComplete="email"
+          placeholder={t("emailPlaceholder")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Field
+          label={t("password")}
+          type="password"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <Alert tone="error">{error}</Alert>}
+        <SubmitButton busy={busy} busyLabel={t("submitting")}>
           {t("submit")}
-        </button>
+        </SubmitButton>
       </form>
-      <Link href="/reset" className="mt-6 block text-sm text-neutral-600 underline">
-        {t("resetTitle")}
-      </Link>
-    </main>
+
+      <div className="mt-5 flex items-center justify-between text-sm">
+        <Link href="/reset" className="text-neutral-600 underline-offset-2 hover:underline">
+          {t("forgotPassword")}
+        </Link>
+        <Link href="/signup" className="font-medium text-neutral-900 underline-offset-2 hover:underline">
+          {t("noAccount")}
+        </Link>
+      </div>
+    </AuthCard>
   );
 }
