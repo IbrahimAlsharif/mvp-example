@@ -23,6 +23,7 @@ import {
 import { CircleSelector } from "@/components/CircleSelector";
 import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
+import { dayKey } from "@/lib/events/date";
 
 type Item = {
   name: string;
@@ -44,7 +45,11 @@ function NewEventInner() {
   const t = useTranslations("event");
   const router = useRouter();
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Default to the user's LOCAL date, not UTC. `new Date().toISOString()` is
+  // UTC, so just after local midnight in a positive-offset timezone it yields
+  // yesterday — silently dating a new memory to the wrong day. dayKey() uses
+  // local Y/M/D, matching how the timeline groups events.
+  const [date, setDate] = useState(() => dayKey(new Date()));
   const [circle, setCircle] = useState<PrivacyCircle>("ME_ONLY"); // G1 default
   const [legacyConsent, setLegacyConsent] = useState(false);
   const [items, setItems] = useState<Item[]>([]);

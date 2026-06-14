@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAccount, Unauthorized } from "@/lib/auth/session";
-import { createEvent, listOwnEvents } from "@/lib/events/create";
+import { createEvent, listVisibleEvents } from "@/lib/events/create";
 import { circleTelemetry } from "@/lib/authz/circle";
 import { emit } from "@/lib/telemetry";
 
@@ -65,7 +65,7 @@ export async function GET() {
     if (e instanceof Unauthorized) return NextResponse.json({ ok: false }, { status: 401 });
     throw e;
   }
-  const events = await listOwnEvents(account.id);
+  const events = await listVisibleEvents(account.id);
   return NextResponse.json({
     ok: true,
     events: events.map((e) => ({

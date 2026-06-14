@@ -1,5 +1,6 @@
 import type { Event, PrivacyCircle, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { acceptedConnectionsByTier } from "@/lib/connections";
 
 /**
  * Create a timeline event as an ATOMIC multi-part write (US-1.1 AC-7).
@@ -106,6 +107,57 @@ function isUniqueViolation(e: unknown): boolean {
 export async function listOwnEvents(accountId: string) {
   return prisma.event.findMany({
     where: { accountId, deletedAt: null },
+    orderBy: { occurredOn: "desc" },
+    include: { media: { where: { deletedAt: null } } },
+  });
+}
+
+/**
+ * The cross-account timeline read path (J3/J9 visibility, graph-backed).
+ *
+ * Returns the events `viewerAccountId` may see, enforcing the load-bearing
+ * invariant SERVER-SIDE (never UI-only):
+ *   - own events:                 every circle (owner sees all of their own)
+ *   - FAMILY-tier connection:     the author's FAMILY + PUBLIC_UNLISTED events
+ *   - GENERAL-tier connection:    the author's PUBLIC_UNLISTED events only
+ *   - no connection:              nothing
+ *   - ME_ONLY:                    NEVER shared, regardless of any connection
+ *
+ * The viewer's own ME_ONLY/FAMILY/PUBLIC events are always included; another
+ * account's ME_ONLY can never enter the result set by construction (it is never
+ * added to any OR branch below).
+ */
+/**
+ * PURE: build the visibility OR-clauses from the viewer id and their tiered
+ * connections. Extracted so the load-bearing invariant (whose events, which
+ * circles) is unit-testable without a database. ME_ONLY of another account is
+ * never added to any branch, so it can never enter the result by construction.
+ */
+export function visibilityClauses(
+  viewerAccountId: string,
+  family: Set<string>,
+  general: Set<string>,
+): Prisma.EventWhereInput[] {
+  const familyIds = [...family];
+  // PUBLIC_UNLISTED is visible to any accepted connection (FAMILY or GENERAL).
+  const publicAuthorIds = [...new Set([...family, ...general])];
+
+  const or: Prisma.EventWhereInput[] = [{ accountId: viewerAccountId }];
+  if (familyIds.length > 0) {
+    or.push({ accountId: { in: familyIds }, circle: "FAMILY" });
+  }
+  if (publicAuthorIds.length > 0) {
+    or.push({ accountId: { in: publicAuthorIds }, circle: "PUBLIC_UNLISTED" });
+  }
+  return or;
+}
+
+export async function listVisibleEvents(viewerAccountId: string) {
+  const { family, general } = await acceptedConnectionsByTier(viewerAccountId);
+  const or = visibilityClauses(viewerAccountId, family, general);
+
+  return prisma.event.findMany({
+    where: { deletedAt: null, OR: or },
     orderBy: { occurredOn: "desc" },
     include: { media: { where: { deletedAt: null } } },
   });

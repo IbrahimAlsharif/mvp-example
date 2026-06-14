@@ -32,6 +32,19 @@ export async function presignPut(
   return getSignedUrl(s3, command, { expiresIn: env.MEDIA_GET_TTL_SECONDS });
 }
 
+/**
+ * Fetch an object's raw bytes server-side. Used by the share-link media path,
+ * which must strip GPS EXIF before serving (US-2.2 AC-6) and therefore cannot
+ * 302-redirect to the original object. Only ever called after an app-layer
+ * authz check passes.
+ */
+export async function getObjectBytes(storageKey: string): Promise<Uint8Array> {
+  const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: storageKey }));
+  const body = res.Body as { transformToByteArray?: () => Promise<Uint8Array> };
+  if (!body?.transformToByteArray) throw new Error("object body is not readable");
+  return body.transformToByteArray();
+}
+
 /** True if the object exists in the bucket. */
 export async function objectExists(storageKey: string): Promise<boolean> {
   try {

@@ -18,7 +18,12 @@ import { resolveShareLink } from "@/lib/media/share";
  * Me-Only/Family media URL is denied. Media must be PERSISTED and not deleted.
  */
 export type MediaAccess =
-  | { ok: true; storageKey: string; via: "owner" | "family_member" | "share_link" }
+  | {
+      ok: true;
+      storageKey: string;
+      mimeType: string;
+      via: "owner" | "family_member" | "share_link";
+    }
   | { ok: false; reason: "not_found" | "not_persisted" | "no_auth" | "expired" | "revoked" };
 
 export async function resolveMediaAccess(input: {
@@ -41,12 +46,12 @@ export async function resolveMediaAccess(input: {
     if (!res.ok) return { ok: false, reason: res.reason === "not_found" ? "no_auth" : res.reason };
     if (res.link.eventId !== event.id) return { ok: false, reason: "no_auth" };
     if (event.circle !== "PUBLIC_UNLISTED") return { ok: false, reason: "no_auth" };
-    return { ok: true, storageKey: media.storageKey, via: "share_link" };
+    return { ok: true, storageKey: media.storageKey, mimeType: media.mimeType, via: "share_link" };
   }
 
   // Authenticated owner/Family path.
   const allowed = await canViewEvent(input.viewerAccountId, event);
   if (!allowed) return { ok: false, reason: "no_auth" };
   const via = input.viewerAccountId === event.accountId ? "owner" : "family_member";
-  return { ok: true, storageKey: media.storageKey, via };
+  return { ok: true, storageKey: media.storageKey, mimeType: media.mimeType, via };
 }

@@ -1,16 +1,18 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
-import { listOwnEvents } from "@/lib/events/create";
+import { listVisibleEvents } from "@/lib/events/create";
 import { CosmicCommandCenter } from "@/components/timeline/cosmic/CosmicCommandCenter";
 import { SignOutButton } from "./SignOutButton";
 import type { EventVM } from "@/lib/events/view";
 
 /**
  * Home timeline (J1 landing) — the dark "cosmic command center" view. Protected.
- * Lists the user's own events (reads hit Postgres, so a just-saved event is
- * fresh on any session — AC-15) and offers the "+ Add event" entry (AC-1).
- * The cosmic theme is scoped to this page via `.timeline-cosmic`.
+ * Lists every event the viewer may see (their own + graph-permitted events of
+ * their accepted FAMILY/GENERAL connections — J3/J9), enforced server-side via
+ * listVisibleEvents. Reads hit Postgres, so a just-saved event is fresh on any
+ * session (AC-15). Offers the "+ Add event" entry (AC-1). The cosmic theme is
+ * scoped to this page via `.timeline-cosmic`.
  */
 export default async function TimelinePage() {
   const account = await getCurrentAccount();
@@ -18,7 +20,7 @@ export default async function TimelinePage() {
 
   const t = await getTranslations("cosmic");
   const tn = await getTranslations("nav");
-  const events = await listOwnEvents(account.id);
+  const events = await listVisibleEvents(account.id);
   const ownerName = account.email.split("@")[0];
 
   const vm: EventVM[] = events.map((e) => ({
@@ -59,6 +61,13 @@ export default async function TimelinePage() {
             >
               📅 {t("fullFamilyHistory")}
             </button>
+            <a
+              href="/api/export"
+              download
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              ⬇️ {t("export")}
+            </a>
             <SignOutButton label={tn("signOut")} />
           </div>
         </div>

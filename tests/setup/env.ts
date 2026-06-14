@@ -11,11 +11,17 @@ for (const file of [".env.local", ".env"]) {
       if (!m) continue;
       const key = m[1];
       let val = m[2].trim();
-      if (
-        (val.startsWith('"') && val.endsWith('"')) ||
-        (val.startsWith("'") && val.endsWith("'"))
-      ) {
-        val = val.slice(1, -1);
+      const quote = val[0];
+      if (quote === '"' || quote === "'") {
+        // Quoted value: take exactly what's between the opening quote and its
+        // matching close, ignoring any trailing inline `# comment`. The .env
+        // files use the `KEY="48" # note` form, which otherwise parses as NaN.
+        const close = val.indexOf(quote, 1);
+        val = close === -1 ? val.slice(1) : val.slice(1, close);
+      } else {
+        // Unquoted value: strip an inline comment.
+        const hash = val.indexOf(" #");
+        if (hash !== -1) val = val.slice(0, hash).trim();
       }
       if (process.env[key] === undefined) process.env[key] = val;
     }

@@ -24,13 +24,32 @@ function ConfirmInner() {
   const error = params.get("error");
   const [email, setEmail] = useState("");
   const [resent, setResent] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function resend(e: React.FormEvent) {
     e.preventDefault();
-    // Re-issue via the signup endpoint's resend path is internal; for MVP we
-    // simply re-trigger reset-style messaging. A dedicated resend route can be
-    // added; the account stays unconfirmed until a valid link is used.
-    setResent(true);
+    setPending(true);
+    setFailed(false);
+    try {
+      // Re-issue a fresh single-use confirmation link (US-0.1 AC-8). The route is
+      // anti-enumeration: it returns ok whether or not an unconfirmed account
+      // exists, so we always show the same "sent" confirmation on a 2xx.
+      const res = await fetch("/api/auth/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        setFailed(true);
+        return;
+      }
+      setResent(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -46,6 +65,8 @@ function ConfirmInner() {
             <Alert tone="success">{t("confirmSent")}</Alert>
           ) : (
             <form onSubmit={resend} className="flex flex-col gap-4">
+              <p className="text-sm text-neutral-600">{t("resendSubtitle")}</p>
+              {failed && <Alert tone="error">{t("resetFailed")}</Alert>}
               <Field
                 label={t("email")}
                 type="email"
@@ -55,7 +76,9 @@ function ConfirmInner() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <SubmitButton>{t("submit")}</SubmitButton>
+              <SubmitButton busy={pending} busyLabel={t("submitting")}>
+                {t("submit")}
+              </SubmitButton>
             </form>
           )}
         </AuthCard>
