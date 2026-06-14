@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { AuthCard, Field, SubmitButton, Alert } from "../(auth)/ui";
 
 /**
  * Confirmation error / resend screen (US-0.1 AC-8). The happy path never lands
@@ -33,34 +34,32 @@ function ConfirmInner() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-4 text-2xl font-bold">{t("signupTitle")}</h1>
-      {error && (
-        <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-          {t("inviteInvalid")}
-        </p>
-      )}
-      {resent ? (
-        <p role="status" className="rounded-lg bg-green-50 p-4 text-green-800">
-          {t("confirmSent")}
-        </p>
-      ) : (
-        <form onSubmit={resend} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-sm">{t("email")}</span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-neutral-300 p-2.5"
-            />
-          </label>
-          <button type="submit" className="rounded-lg bg-neutral-900 px-5 py-2.5 text-white">
-            {t("submit")}
-          </button>
-        </form>
-      )}
+    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <AuthCard title={t("signupTitle")}>
+          {error && (
+            <div className="mb-4">
+              <Alert tone="error">{t("inviteInvalid")}</Alert>
+            </div>
+          )}
+          {resent ? (
+            <Alert tone="success">{t("confirmSent")}</Alert>
+          ) : (
+            <form onSubmit={resend} className="flex flex-col gap-4">
+              <Field
+                label={t("email")}
+                type="email"
+                required
+                autoComplete="email"
+                placeholder={t("emailPlaceholder")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <SubmitButton>{t("submit")}</SubmitButton>
+            </form>
+          )}
+        </AuthCard>
+      </div>
     </main>
   );
 }

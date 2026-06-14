@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { AuthCard, Field, SubmitButton, Alert, Divider } from "../ui";
+import { AuthCard, Field, SubmitButton, Alert, Divider, GhostButton } from "../ui";
 
 export default function SignupPage() {
   return (
@@ -112,12 +112,9 @@ function SignupInner() {
 
       <div className="mt-5">
         <Divider label={t("orDivider")} />
-        <a
-          href="/api/auth/oauth/google"
-          className="mt-4 flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-5 py-2.5 font-medium text-neutral-800 transition hover:bg-neutral-50"
-        >
-          {t("withGoogle")}
-        </a>
+        <div className="mt-4">
+          <GhostButton href="/api/auth/oauth/google">{t("withGoogle")}</GhostButton>
+        </div>
       </div>
 
       <Link

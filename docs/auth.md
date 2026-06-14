@@ -49,13 +49,18 @@ The user-facing auth pages live in the `(auth)` route group and share one shell:
 - `src/app/(auth)/layout.tsx` — centered card on a soft gradient canvas with the
   product brand header; RTL is inherited from the root `<html dir="rtl">` (G6).
 - `src/app/(auth)/ui.tsx` — shared kit (`AuthCard`, `Field`, `SubmitButton` with
-  spinner, `Alert`, `Divider`); spacing uses logical properties so it renders
-  correctly under RTL.
+  spinner, `GhostButton`, `Alert`, `Divider`); styled with the blue/orange
+  identity (see [Design System](design-system.md)). Spacing uses logical
+  properties so it renders correctly under RTL.
 - `signin/page.tsx`, `signup/page.tsx`, `reset/page.tsx` — consume the kit. Copy
   is Arabic-first via `messages/ar.json` (`auth.*`). Signin failures use
   `auth.signinFailed` (not the invite-error copy); reset failures use
-  `auth.resetFailed`. Signin links to both `/signup` and `/reset`. These pages
-  are presentation only — all auth logic stays in the API routes above.
+  `auth.resetFailed`. Signin links to both `/signup` and `/reset`. Signup's
+  Google button is a `GhostButton`. These pages are presentation only — all
+  auth logic stays in the API routes above.
+- `src/app/confirm/page.tsx` — the invalid/expired-link + resend screen. Lives
+  outside the `(auth)` group, so it renders its own centered shell but reuses
+  the same kit (imports from `../(auth)/ui`) for a consistent look.
 
 ## Security notes
 - Passwords: argon2id (`src/lib/auth/password.ts`).

@@ -60,6 +60,7 @@ Media upload/serving (US-1.2 / US-3.3) needs an S3-compatible endpoint at
 
 ## Feature docs
 
+- [Design System](docs/design-system.md) — blue/orange identity, gradients, motion, and the shared UI primitives.
 - [Architecture Overview](docs/architecture.md) — how the whole slice fits together end to end.
 - [Authentication & Sessions (US-0.1)](docs/auth.md) — invite gating, confirmation, social, reset, session model.
 - [Privacy Circles & Enforcement (US-3.1)](docs/privacy-circles.md) — the three circles, the canViewEvent chokepoint, the Public child-media warning.

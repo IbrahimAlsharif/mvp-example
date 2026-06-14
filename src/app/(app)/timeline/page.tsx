@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
 import { listOwnEvents } from "@/lib/events/create";
+import { EventCard } from "@/components/EventCard";
 import { SignOutButton } from "./SignOutButton";
 
 /**
@@ -16,61 +17,70 @@ export default async function TimelinePage() {
 
   const t = await getTranslations("nav");
   const events = await listOwnEvents(account.id);
+  // Owner display name: local-part of the email (no displayName field in schema).
+  const ownerName = account.email.split("@")[0];
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <header className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("timeline")}</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/events/new"
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white"
-            data-testid="add-event"
-          >
-            {t("addEvent")}
-          </Link>
-          <SignOutButton label={t("signOut")} />
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-20 border-b border-white/60 bg-white/70 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-lg text-white shadow-brand">
+              ⏳
+            </span>
+            <h1 className="bg-brand-gradient bg-clip-text text-xl font-extrabold text-transparent">
+              {t("timeline")}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/events/new"
+              className="rounded-xl bg-accent-gradient px-4 py-2 text-sm font-bold text-white shadow-accent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0"
+              data-testid="add-event"
+            >
+              {t("addEvent")}
+            </Link>
+            <SignOutButton label={t("signOut")} />
+          </div>
         </div>
       </header>
 
-      <p
-        data-testid="default-circle"
-        data-circle={account.defaultCircle}
-        className="mb-6 rounded-lg bg-neutral-100 p-3 text-sm text-neutral-700"
-      >
-        الخصوصية الافتراضية: أنا فقط
-      </p>
-
-      {events.length === 0 ? (
-        <p className="text-neutral-500" data-testid="timeline-empty">
-          لا توجد ذكريات بعد. ابدأ بإضافة أول حدث.
+      <main className="mx-auto max-w-2xl px-6 py-8">
+        <p
+          data-testid="default-circle"
+          data-circle={account.defaultCircle}
+          className="mb-6 flex items-center gap-2 rounded-xl border border-brand-100 bg-brand-50 p-3 text-sm text-brand-800"
+        >
+          <span aria-hidden>🔒</span>
+          الخصوصية الافتراضية: أنا فقط
         </p>
-      ) : (
-        <ul className="flex flex-col gap-4" data-testid="timeline-list">
-          {events.map((e) => (
-            <li
-              key={e.id}
-              data-testid="timeline-event"
-              data-circle={e.circle}
-              className="rounded-xl border border-neutral-200 p-4"
+
+        {events.length === 0 ? (
+          <div
+            className="animate-fade-in-up rounded-2xl border border-dashed border-neutral-300 bg-white/60 p-12 text-center"
+            data-testid="timeline-empty"
+          >
+            <div className="mx-auto mb-4 flex h-16 w-16 animate-float items-center justify-center rounded-2xl bg-brand-gradient text-3xl text-white shadow-brand">
+              ✨
+            </div>
+            <p className="text-neutral-500">لا توجد ذكريات بعد. ابدأ بإضافة أول حدث.</p>
+            <Link
+              href="/events/new"
+              className="mt-5 inline-block rounded-xl bg-accent-gradient px-6 py-2.5 font-bold text-white shadow-accent transition-all duration-200 hover:-translate-y-0.5"
             >
-              <div className="mb-1 text-sm text-neutral-500">
-                {new Date(e.occurredOn).toLocaleDateString("ar")}
-              </div>
-              {e.note && <p className="mb-2 whitespace-pre-wrap">{e.note}</p>}
-              {e.media.map((m) => (
-                <img
-                  key={m.publicId}
-                  src={`/api/media/${m.publicId}`}
-                  alt=""
-                  className="max-h-64 rounded-lg"
-                  data-testid="event-media"
-                />
-              ))}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+              {t("addEvent")}
+            </Link>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-5" data-testid="timeline-list">
+            {events.map((e, i) => (
+              <li key={e.id}>
+                <EventCard event={e} ownerName={ownerName} index={i} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
   );
 }

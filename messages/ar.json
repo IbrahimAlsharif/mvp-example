@@ -63,6 +63,13 @@
     "save": "حفظ",
     "saving": "جارٍ الحفظ…",
     "saved": "تم الحفظ",
-    "uploadPending": "جارٍ الرفع…"
+    "uploadPending": "جارٍ الرفع…",
+    "like": "أعجبني",
+    "comment": "تعليق",
+    "share": "مشاركة",
+    "me": "أنا",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "daysAgo": "قبل {n} يوماً"
   }
 }

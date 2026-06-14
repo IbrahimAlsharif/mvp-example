@@ -43,7 +43,7 @@ export function CircleSelector({
 
   return (
     <fieldset className="flex flex-col gap-2" data-testid="circle-selector">
-      <legend className="mb-1 text-sm font-medium">{t("label")}</legend>
+      <legend className="mb-1 text-sm font-semibold text-neutral-700">{t("label")}</legend>
       {ORDER.map((c) => {
         const k = KEY[c];
         const selected = value === c;
@@ -51,8 +51,10 @@ export function CircleSelector({
           <label
             key={c}
             data-testid={`circle-option-${k}`}
-            className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-              selected ? "border-neutral-900 bg-neutral-50" : "border-neutral-200"
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all duration-200 ${
+              selected
+                ? "border-brand bg-brand-50 ring-2 ring-brand/15"
+                : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
             }`}
           >
             <input
@@ -61,10 +63,10 @@ export function CircleSelector({
               value={c}
               checked={selected}
               onChange={() => select(c)}
-              className="mt-1"
+              className="mt-1 accent-brand"
             />
             <span className="flex flex-col">
-              <span className="font-medium">{t(k)}</span>
+              <span className="font-semibold text-neutral-800">{t(k)}</span>
               <span className="text-sm text-neutral-600">{t(`${k}_help`)}</span>
             </span>
           </label>
