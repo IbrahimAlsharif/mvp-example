@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
 import { dayKey } from "@/lib/events/date";
+import { safeEmit } from "@/lib/telemetry";
 
 /**
  * J1 dated bulk import — the highest-leverage activation lever (seed a populated
@@ -39,7 +40,7 @@ export default function BulkImportPage() {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...next } : r)));
   }
 
-  async function importOne(file: File, i: number) {
+  async function importOne(file: File, i: number): Promise<boolean> {
     patch(i, { status: "uploading" });
     // Backfill the original capture date from EXIF; fall back to local today.
     const exif = await readExif(file);
@@ -52,7 +53,7 @@ export default function BulkImportPage() {
       publicId = handle.publicId;
     } catch (e) {
       patch(i, { status: "failed", reason: e instanceof UploadError ? e.message : "upload_failed" });
-      return;
+      return false;
     }
 
     patch(i, { status: "saving" });
@@ -71,11 +72,13 @@ export default function BulkImportPage() {
       });
       if (!res.ok) {
         patch(i, { status: "failed", reason: `save_${res.status}` });
-        return;
+        return false;
       }
       patch(i, { status: "done" });
+      return true;
     } catch {
       patch(i, { status: "failed", reason: "save_failed" });
+      return false;
     }
   }
 
@@ -84,10 +87,26 @@ export default function BulkImportPage() {
     const list = Array.from(files);
     setRows(list.map((f) => ({ name: f.name, status: "pending" })));
     setRunning(true);
+    // import_started carries only the structural item count (G4) — no filenames.
+    safeEmit("import_started", { item_count: list.length });
     // Sequential to keep drop-protection legible (each item commits before next).
+    let success = 0;
+    let dropped = 0;
     for (let i = 0; i < list.length; i++) {
-      await importOne(list[i], i);
+      const ok = await importOne(list[i], i);
+      if (ok) success++;
+      else dropped++;
     }
+    // import_completed reconciles N selected = N succeeded + N dropped (US-0.3
+    // taxonomy). A nonzero dropped_count is a durability/trust signal (G2),
+    // distinct from telemetry-transport loss. Completing an import attains the
+    // populated_timeline funnel stage.
+    safeEmit("import_completed", {
+      item_count: list.length,
+      success_count: success,
+      dropped_count: dropped,
+    });
+    if (success > 0) safeEmit("funnel_stage_attained", { stage: "populated_timeline" });
     setRunning(false);
   }
 

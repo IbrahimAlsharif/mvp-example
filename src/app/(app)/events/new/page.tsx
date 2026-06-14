@@ -400,8 +400,10 @@ function NewEventInner() {
           <span className="text-sm text-neutral-700">{t("legacyConsent")}</span>
         </label>
 
+        {/* Assertive live region: a save/upload failure is announced to AT, not
+            signaled by color alone (US-0.4 AC-6/AC-10). */}
         {error && (
-          <p role="alert" className="animate-fade-in rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700">
+          <p role="alert" aria-live="assertive" className="animate-fade-in rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700">
             {error}
           </p>
         )}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
 import { listVisibleEvents } from "@/lib/events/create";
+import { safeEmit } from "@/lib/telemetry";
 import { CosmicCommandCenter } from "@/components/timeline/cosmic/CosmicCommandCenter";
 import { SignOutButton } from "./SignOutButton";
 import type { EventVM } from "@/lib/events/view";
@@ -32,6 +33,14 @@ export default async function TimelinePage() {
     lat: e.locationLat,
     lng: e.locationLng,
   }));
+
+  // Content-blind browse signal (US-0.3 taxonomy). A revisit to a populated
+  // timeline (>1 distinct day) is the "come back" half of the bet; the
+  // first_revisit funnel stage is attained once a populated timeline is browsed.
+  const distinctDays = new Set(vm.map((e) => e.occurredOn.slice(0, 10))).size;
+  const isPopulated = distinctDays >= 2;
+  safeEmit("timeline_view_opened", { granularity: "day" });
+  if (isPopulated) safeEmit("funnel_stage_attained", { stage: "first_revisit" });
 
   // "Now" is computed on the server so the past/future split is deterministic
   // across the RSC boundary (no client clock divergence).

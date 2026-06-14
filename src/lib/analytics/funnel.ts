@@ -16,6 +16,8 @@
  * (counts, timestamps, opaque ids) — never memory text/media/coordinates.
  */
 
+import { safeEmit } from "@/lib/telemetry";
+
 export type FunnelStage = "signup" | "first_event" | "populated_timeline" | "first_revisit";
 
 export const FUNNEL_ORDER: FunnelStage[] = [
@@ -108,7 +110,9 @@ export function cohortWeek(signupAtMs: number): string {
   const d = new Date(signupAtMs);
   const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 1);
   const week = Math.floor((signupAtMs - startOfYear) / (7 * 24 * 60 * 60 * 1000));
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+  // Token-safe structural form (lowercase, underscore) so it passes the
+  // content-blind enum-token guard when emitted on the wire (G4).
+  return `${d.getUTCFullYear()}_w${String(week).padStart(2, "0")}`;
 }
 
 /** Whole days since the user's last activity — the early-lapse marker (AC, derived). */
@@ -140,4 +144,40 @@ export function weeklyActive(
     did_revisit: a.revisited,
     days_since_last_activity: daysSinceLastActivity(a, nowMs),
   };
+}
+
+/**
+ * Emit `funnel_stage_attained` for a user, idempotent per (account, stage) so a
+ * double-submit/retry never double-counts a stage (AC-6). The caller supplies
+ * the set of stages already recorded for this account; only newly-reached
+ * stages are emitted. Returns the stages emitted this call.
+ */
+export function emitStageAttainment(
+  a: UserActivity,
+  alreadyAttained: Set<FunnelStage>,
+  cfg: Config = FUNNEL_DEFAULTS,
+): FunnelStage[] {
+  const furthest = furthestStage(a, cfg);
+  const reachedIdx = FUNNEL_ORDER.indexOf(furthest);
+  const newly: FunnelStage[] = [];
+  // Attaining a later stage implies all earlier ones (in-order, AC-1).
+  for (let i = 0; i <= reachedIdx; i++) {
+    const stage = FUNNEL_ORDER[i];
+    if (!alreadyAttained.has(stage)) {
+      newly.push(stage);
+      safeEmit("funnel_stage_attained", { stage });
+    }
+  }
+  return newly;
+}
+
+/** Emit a weekly_active cohort marker (content-blind structural fields only). */
+export function emitWeeklyActive(marker: WeeklyActiveMarker): void {
+  safeEmit("weekly_active", {
+    cohort_week: marker.cohort_week,
+    week_offset: marker.week_offset,
+    did_create: marker.did_create,
+    did_revisit: marker.did_revisit,
+    days_since_last_activity: marker.days_since_last_activity,
+  });
 }

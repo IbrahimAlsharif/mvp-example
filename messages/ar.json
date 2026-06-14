@@ -76,7 +76,8 @@
     "publicWarningTitle": "تنبيه قبل إنشاء رابط خاص",
     "publicWarningBody": "أي شخص يملك هذا الرابط يمكنه رؤية هذه الذكرى ووسائطها. تأكّد أنها لا تحتوي على صور أطفال أو محتوى لم تأذن بمشاركته.",
     "publicWarningConfirm": "أتفهّم، تابع",
-    "publicWarningCancel": "إلغاء"
+    "publicWarningCancel": "إلغاء",
+    "selectedAnnounce": "مستوى الخصوصية المحدد: {circle}"
   },
   "share": {
     "revokeHonestCopy": "إلغاء الرابط يمنع أي وصول جديد، لكنه لا يستطيع استرجاع نسخ سبق تنزيلها."

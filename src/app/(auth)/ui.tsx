@@ -34,14 +34,21 @@ export function AuthCard({
 export function Field({
   label,
   hint,
+  error,
   type = "text",
   ...rest
 }: {
   label: string;
   hint?: string;
+  /** Field-level error: programmatically associated + announced (US-0.4 AC-6). */
+  error?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  // Associate BOTH hint and error with the input so a screen reader announces
+  // the error in context, not as a detached message (AC-6).
+  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-semibold text-neutral-700">
@@ -50,13 +57,25 @@ export function Field({
       <input
         id={id}
         type={type}
-        aria-describedby={hintId}
-        className="rounded-xl border border-neutral-300 bg-white px-3.5 py-2.5 text-neutral-900 shadow-sm transition-all duration-200 outline-none placeholder:text-neutral-400 hover:border-neutral-400 focus:border-brand focus:ring-4 focus:ring-brand/15"
+        aria-describedby={describedBy}
+        aria-invalid={error ? true : undefined}
+        aria-errormessage={errorId}
+        className={`rounded-xl border bg-white px-3.5 py-2.5 text-neutral-900 shadow-sm transition-all duration-200 outline-none placeholder:text-neutral-400 focus:ring-4 ${
+          error
+            ? "border-red-400 focus:border-red-500 focus:ring-red-500/15"
+            : "border-neutral-300 hover:border-neutral-400 focus:border-brand focus:ring-brand/15"
+        }`}
         {...rest}
       />
       {hint && (
         <span id={hintId} className="text-xs text-neutral-400">
           {hint}
+        </span>
+      )}
+      {error && (
+        // role=alert so the association + the announcement both hold (AC-6).
+        <span id={errorId} role="alert" className="text-xs font-medium text-red-600">
+          {error}
         </span>
       )}
     </div>
@@ -95,7 +114,7 @@ export function GhostButton({
   return (
     <a
       href={href}
-      className="flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-5 py-2.5 font-semibold text-neutral-800 transition-all duration-200 hover:border-brand hover:bg-brand-50 hover:text-brand-700"
+      className="flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-5 py-2.5 font-semibold text-neutral-800 transition-all duration-200 hover:border-brand hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/30"
     >
       {children}
     </a>

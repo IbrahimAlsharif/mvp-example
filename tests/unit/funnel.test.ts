@@ -5,9 +5,12 @@ import {
   cohortWeek,
   daysSinceLastActivity,
   weeklyActive,
+  emitStageAttainment,
   FUNNEL_DEFAULTS,
+  type FunnelStage,
   type UserActivity,
 } from "@/lib/analytics/funnel";
+import { safeEmit } from "@/lib/telemetry";
 
 const DAY = 24 * 60 * 60 * 1000;
 const base = (over: Partial<UserActivity>): UserActivity => ({
@@ -80,7 +83,7 @@ describe("US-0.3 three separable diagnoses (AC-2/AC-2b)", () => {
 
 describe("US-0.3 cohort + early-lapse markers (AC-4)", () => {
   it("groups by signup week", () => {
-    expect(cohortWeek(Date.UTC(2026, 0, 1))).toMatch(/^2026-W0\d$/);
+    expect(cohortWeek(Date.UTC(2026, 0, 1))).toMatch(/^2026_w0\d$/);
     // Two signups in the same week share a cohort key.
     expect(cohortWeek(Date.UTC(2026, 0, 1))).toBe(cohortWeek(Date.UTC(2026, 0, 3)));
   });
@@ -101,6 +104,37 @@ describe("US-0.3 cohort + early-lapse markers (AC-4)", () => {
     expect(Object.keys(m).sort()).toEqual(
       ["accountId", "cohort_week", "days_since_last_activity", "did_create", "did_revisit", "week_offset"].sort(),
     );
+  });
+});
+
+describe("US-0.3 stage attainment is idempotent per user (AC-6)", () => {
+  it("emits each newly-reached stage once; a re-run with the same set emits nothing", () => {
+    const a = base({ eventDays: ["2026-01-02", "2026-01-05"], revisited: true });
+    const seen = new Set<FunnelStage>();
+    const first = emitStageAttainment(a, seen);
+    // Reaching first_revisit implies signup, first_event, populated_timeline too.
+    expect(first).toEqual(["signup", "first_event", "populated_timeline", "first_revisit"]);
+    first.forEach((s) => seen.add(s));
+    // A double-submit / retry with the same already-attained set emits nothing.
+    expect(emitStageAttainment(a, seen)).toEqual([]);
+  });
+
+  it("only emits the newly-crossed stage when a user advances", () => {
+    const a1 = base({ eventDays: ["2026-01-02"] }); // first_event
+    const seen = new Set<FunnelStage>();
+    emitStageAttainment(a1, seen).forEach((s) => seen.add(s));
+    expect([...seen].sort()).toEqual(["first_event", "signup"]);
+    // Later the user populates the timeline → only the new stage is emitted.
+    const a2 = base({ eventDays: ["2026-01-02", "2026-01-09"] });
+    expect(emitStageAttainment(a2, seen)).toEqual(["populated_timeline"]);
+  });
+});
+
+describe("US-0.3 instrumentation is non-blocking (NFR)", () => {
+  it("safeEmit never throws, even on a content-bearing payload (degrades to ops signal)", () => {
+    // A note string on a non-enum field would throw via emit(); safeEmit must
+    // swallow it so a user action is never broken by telemetry.
+    expect(() => safeEmit("event_create_saved", { note: "my daughter's first steps" })).not.toThrow();
   });
 });
 

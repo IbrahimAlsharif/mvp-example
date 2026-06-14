@@ -73,6 +73,12 @@ export function CircleSelector({
         );
       })}
 
+      {/* Announce the current circle to assistive tech, not by color/position
+          alone (US-0.4 AC-9). Polite so it follows the user's selection. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {t("selectedAnnounce", { circle: t(KEY[value]) })}
+      </span>
+
       <PublicWarningDialog
         open={pendingPublic}
         onConfirm={() => {

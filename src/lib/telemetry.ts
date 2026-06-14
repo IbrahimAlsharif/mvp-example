@@ -44,6 +44,11 @@ const ENUM_FIELDS = new Set<string>([
   "duration_bucket",
   "mode",
   "engine",
+  // US-0.3 funnel / cohort structural enums.
+  "stage",
+  "cohort_week",
+  "diagnosis",
+  "precision_mode",
 ]);
 
 const ENUM_TOKEN = /^[a-z0-9_]{1,40}$/;
@@ -75,4 +80,33 @@ export function emit(event: string, payload: TelemetryPayload = {}): void {
     // eslint-disable-next-line no-console
     console.info(`[telemetry] ${event}`, { ...payload, ts: new Date().toISOString() });
   }
+}
+
+/**
+ * Emit from a user-action path WITHOUT ever throwing into that path (US-0.3
+ * NFR: instrumentation is non-blocking — telemetry failure degrades to
+ * dropped-and-monitored, never a user-visible error). A content-blind violation
+ * is surfaced as the `telemetry_validation_rejected` ops signal (G4 guardrail
+ * signal) instead of propagating.
+ */
+export function safeEmit(event: string, payload: TelemetryPayload = {}): void {
+  try {
+    emit(event, payload);
+  } catch (e) {
+    if (e instanceof ContentBlindViolation) {
+      // Report the rejection itself with only the offending event NAME (an enum
+      // token), never the rejected payload — so the ops signal stays content-blind.
+      try {
+        emit("telemetry_validation_rejected", { context: safeEventToken(event) });
+      } catch {
+        /* never let the ops signal throw into a user action */
+      }
+      return;
+    }
+    // Any other error is swallowed here; the user action must not fail on it.
+  }
+}
+
+function safeEventToken(event: string): string {
+  return ENUM_TOKEN.test(event) ? event : "unknown";
 }
