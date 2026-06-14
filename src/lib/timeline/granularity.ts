@@ -50,3 +50,32 @@ export function jumpTo(dayKey: string, granularity: Granularity): Window | null 
   if (Number.isNaN(t)) return null;
   return windowFor(granularity, t);
 }
+
+/**
+ * Representative visible half-window (in days) for each granularity, used by the
+ * cosmic timeline's log-scaled zoom dial. A "year" view shows ~a year on each
+ * side, "month" ~a quarter, "day" ~a few days. Switching presets keeps the
+ * existing NOW/center anchor (AC-2) — only the span changes.
+ */
+const GRANULARITY_SPAN_DAYS: Record<Granularity, number> = {
+  year: 365,
+  month: 90,
+  day: 3,
+};
+
+/**
+ * Convert a granularity to the cosmic-timeline zoom dial value (0..100), the
+ * inverse of the component's log-scaled zoomToSpanDays. Pure so the mapping is
+ * unit-testable. `spanMinDays`/`spanMaxDays` mirror the component's bounds.
+ */
+export function granularityToZoom(
+  granularity: Granularity,
+  spanMinDays = 7,
+  spanMaxDays = 365 * 30,
+): number {
+  const spanDays = Math.min(spanMaxDays, Math.max(spanMinDays, GRANULARITY_SPAN_DAYS[granularity]));
+  const lnMin = Math.log(spanMinDays);
+  const lnMax = Math.log(spanMaxDays);
+  const f = (Math.log(spanDays) - lnMin) / (lnMax - lnMin);
+  return Math.round(f * 100);
+}

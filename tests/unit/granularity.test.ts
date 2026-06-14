@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { windowFor, anchorOf, switchGranularity, jumpTo } from "@/lib/timeline/granularity";
+import { windowFor, anchorOf, switchGranularity, jumpTo, granularityToZoom } from "@/lib/timeline/granularity";
 
 const ANCHOR = Date.UTC(2021, 5, 15, 12); // 2021-06-15 midday
 
@@ -44,5 +44,18 @@ describe("US-2.1 jump-to-date (AC-3, reachable in <4 clicks)", () => {
 
   it("rejects an unparseable date rather than navigating nowhere", () => {
     expect(jumpTo("not-a-date", "day")).toBeNull();
+  });
+});
+
+describe("US-2.1 granularity → cosmic zoom dial (preset buttons)", () => {
+  it("maps to a 0..100 dial, monotonic: day (zoomed in) < month < year", () => {
+    const y = granularityToZoom("year");
+    const m = granularityToZoom("month");
+    const d = granularityToZoom("day");
+    expect(d).toBeGreaterThanOrEqual(0);
+    expect(y).toBeLessThanOrEqual(100);
+    // A wider span is a higher zoom-dial value in the component's model.
+    expect(d).toBeLessThan(m);
+    expect(m).toBeLessThan(y);
   });
 });
