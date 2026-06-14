@@ -1,0 +1,59 @@
+# Local dev infrastructure for Human Timeline Network.
+# Postgres for app data; MinIO (S3-compatible) for media blobs.
+# The MinIO bucket is PRIVATE — no anonymous policy is ever applied. The only
+# path to bytes is a short-lived presigned GET minted by the authz-gated
+# /api/media route (US-3.3, guardrail G1 no-public-leakage).
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: htn
+      POSTGRES_PASSWORD: htn
+      POSTGRES_DB: htn
+    ports:
+      - "5432:5432"
+    volumes:
+      - htn_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U htn"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - htn_minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: create the private bucket. Deliberately NO `mc anonymous set`.
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set local http://minio:9000 minioadmin minioadmin) do echo '...waiting for minio...' && sleep 1; done;
+      mc mb --ignore-existing local/htn-media;
+      mc anonymous set none local/htn-media;
+      echo 'bucket htn-media ready (private)';
+      exit 0;
+      "
+
+volumes:
+  htn_pg:
+  htn_minio:
