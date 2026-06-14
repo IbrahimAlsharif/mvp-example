@@ -12,7 +12,7 @@ export function SignOutButton({ label }: { label: string }) {
   return (
     <button
       onClick={signOut}
-      className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-all duration-200 hover:border-brand hover:bg-brand-50 hover:text-brand-700"
+      className="rounded-xl border border-cosmic-border bg-cosmic-surface/60 px-3 py-2 text-xs font-medium text-cosmic-muted transition-colors hover:bg-cosmic-surface2 hover:text-cosmic-ink"
     >
       {label}
     </button>

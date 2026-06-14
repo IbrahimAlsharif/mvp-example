@@ -27,8 +27,17 @@ const brandIcon = L.divIcon({
  * with ssr:false in TimelineView). `events` is already the filtered + visible
  * set; only those with coordinates get a pin. Auto-fits to the markers.
  */
-export default function EventMap({ events }: { events: EventVM[] }) {
+export default function EventMap({
+  events,
+  theme = "light",
+  height = 420,
+}: {
+  events: EventVM[];
+  theme?: "light" | "cosmic";
+  height?: number | string;
+}) {
   const t = useTranslations("timeline");
+  const cosmic = theme === "cosmic";
   const located = useMemo(
     () => events.filter((e): e is EventVM & { lat: number; lng: number } => e.lat != null && e.lng != null),
     [events],
@@ -38,7 +47,12 @@ export default function EventMap({ events }: { events: EventVM[] }) {
     return (
       <div
         data-testid="map-empty"
-        className="flex h-[420px] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-white/60 text-sm text-neutral-500"
+        style={{ height }}
+        className={
+          cosmic
+            ? "flex items-center justify-center rounded-2xl border border-cosmic-border bg-cosmic-surface/50 text-sm text-cosmic-muted"
+            : "flex items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-white/60 text-sm text-neutral-500"
+        }
       >
         🗺️ {t("noLocatedEvents")}
       </div>
@@ -49,18 +63,32 @@ export default function EventMap({ events }: { events: EventVM[] }) {
   const bounds = L.latLngBounds(located.map((e) => [e.lat, e.lng] as [number, number]));
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-200/70 shadow-card" data-testid="event-map">
+    <div
+      className={
+        cosmic
+          ? "overflow-hidden rounded-2xl border border-cosmic-border"
+          : "overflow-hidden rounded-2xl border border-neutral-200/70 shadow-card"
+      }
+      data-testid="event-map"
+    >
       <MapContainer
         center={center}
         bounds={located.length > 1 ? bounds : undefined}
         zoom={located.length > 1 ? undefined : 12}
         scrollWheelZoom
-        style={{ height: 420, width: "100%" }}
+        style={{ height, width: "100%" }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        {cosmic ? (
+          <TileLayer
+            attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
+        ) : (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        )}
         {located.map((e) => (
           <Marker key={e.id} position={[e.lat, e.lng]} icon={brandIcon}>
             <Popup>

@@ -33,6 +33,21 @@ enum AccountStatus {
   ACTIVE
 }
 
+// A connection's tier governs which of an author's events a counterpart can see
+// (US — social graph). FAMILY can see the author's FAMILY + PUBLIC_UNLISTED
+// events; GENERAL can see only PUBLIC_UNLISTED. ME_ONLY is never shared. This
+// maps onto PrivacyCircle without duplicating it: the circle stays the per-event
+// label, the tier is the per-relationship grant.
+enum ConnectionTier {
+  FAMILY
+  GENERAL
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+}
+
 enum AuthProvider {
   EMAIL
   GOOGLE
@@ -76,6 +91,43 @@ model Account {
   sessions   Session[]
   events     Event[]
   tokens     EmailToken[]
+
+  // Social graph. A Connection is stored ONCE per unordered pair with
+  // accountAId < accountBId (canonical ordering), so these two back-relations
+  // are disambiguated by relation name, not by direction-as-meaning.
+  connectionsA Connection[] @relation("ConnectionA")
+  connectionsB Connection[] @relation("ConnectionB")
+  sentRequests Connection[] @relation("ConnectionRequester")
+}
+
+// An accepted or pending link between two accounts (the social graph edge).
+//
+// Invariants:
+//  - Exactly one row per unordered pair: callers MUST store it with
+//    accountAId < accountBId (lexicographic on cuid). @@unique enforces no dup.
+//  - `tier` is the visibility grant (see ConnectionTier); it applies SYMMETRICALLY
+//    once ACCEPTED — both sides see each other's events at that tier.
+//  - `requestedById` records who initiated, so accept/decline knows which side
+//    is the pending recipient (the OTHER account of the pair).
+//  - A self-connection is meaningless and must be rejected by the accessor layer.
+model Connection {
+  id            String           @id @default(cuid())
+  accountAId    String // canonical low id
+  accountA      Account          @relation("ConnectionA", fields: [accountAId], references: [id], onDelete: Cascade)
+  accountBId    String // canonical high id
+  accountB      Account          @relation("ConnectionB", fields: [accountBId], references: [id], onDelete: Cascade)
+  tier          ConnectionTier   @default(GENERAL)
+  status        ConnectionStatus @default(PENDING)
+  requestedById String // which account sent the request (one of A/B)
+  requestedBy   Account          @relation("ConnectionRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  acceptedAt    DateTime? // set when status flips to ACCEPTED
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([accountAId, accountBId]) // one edge per unordered pair
+  @@index([accountAId, status])
+  @@index([accountBId, status])
+  @@index([requestedById])
 }
 
 model AuthIdentity {
@@ -91,14 +143,14 @@ model AuthIdentity {
 }
 
 model EmailToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   accountId String
-  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  token     String   @unique // >=128-bit, non-guessable
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  token     String    @unique // >=128-bit, non-guessable
   purpose   String // "confirm" | "reset"
   expiresAt DateTime
   usedAt    DateTime? // single-use (US-0.1 AC-2, AC-7)
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([accountId])
 }

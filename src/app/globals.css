@@ -76,6 +76,88 @@ body {
   }
 }
 
+/* ── Landing hero: animated logo badge ──────────────────────────────────────
+   The brand mark gently floats; a soft conic halo rotates behind it; and the
+   hourglass sand drains/refills + grains fall on a loop. All decorative and
+   disabled under prefers-reduced-motion (see the global guard at end of file). */
+.logo-badge {
+  animation: float 5s ease-in-out infinite;
+}
+.logo-halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(96, 154, 250, 0.7),
+    rgba(249, 115, 22, 0.7),
+    rgba(79, 70, 229, 0.7),
+    rgba(96, 154, 250, 0.7)
+  );
+  filter: blur(10px);
+  opacity: 0.55;
+  z-index: -1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .logo-halo {
+    animation: halo-spin 8s linear infinite;
+  }
+  .ll-sand-top {
+    transform-origin: center 24px;
+    animation: sand-drain 4s ease-in-out infinite;
+  }
+  .ll-sand-bottom {
+    transform-origin: center 46px;
+    animation: sand-fill 4s ease-in-out infinite;
+  }
+  .ll-grain {
+    animation: grain-fall 1.6s ease-in infinite;
+  }
+  .ll-grain-2 {
+    animation-delay: 0.8s;
+  }
+}
+@keyframes halo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sand-drain {
+  0% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: scaleY(0.05);
+    opacity: 0.85;
+  }
+}
+@keyframes sand-fill {
+  0% {
+    transform: scaleY(0.05);
+    opacity: 0.85;
+  }
+  90%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+@keyframes grain-fall {
+  0% {
+    transform: translateY(-3px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(7px);
+    opacity: 0;
+  }
+}
+
 /* Ambient gradient orbs behind the glass — the "alive" background for 2030 feel. */
 .aurora {
   position: fixed;
@@ -134,6 +216,112 @@ body {
     width: 100%;
     height: 100%;
     transform: translate(-50%, -50%);
+  }
+}
+
+/* ── Cosmic theme (scoped) ───────────────────────────────────────────────────
+   The timeline "command center" is the only dark surface in the app. Everything
+   here is scoped under .timeline-cosmic so the light identity on every other
+   page is untouched. Provides: a deep nebula canvas, a faint animated starfield,
+   frosted dark panels, and reusable neon-node + glow primitives. All motion is
+   disabled by the global prefers-reduced-motion guard at the end of this file. */
+.timeline-cosmic {
+  position: relative;
+  isolation: isolate;
+  background: theme("backgroundImage.cosmic-canvas");
+  background-color: #070b1a;
+  color: theme("colors.cosmic.ink");
+  min-height: 100vh;
+}
+/* Faint starfield: two layered radial-dot patterns that slowly twinkle/drift. */
+.timeline-cosmic::before,
+.timeline-cosmic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.timeline-cosmic::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 75% 15%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 50% 60%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 90% 70%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 35% 85%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 10% 65%, rgba(255, 255, 255, 0.45), transparent);
+  background-repeat: repeat;
+  background-size: 420px 420px;
+  opacity: 0.5;
+}
+.timeline-cosmic::after {
+  /* Soft nebula bloom layered over the stars. */
+  background:
+    radial-gradient(40rem 28rem at 78% 8%, rgba(56, 189, 248, 0.10), transparent 70%),
+    radial-gradient(38rem 26rem at 6% 96%, rgba(168, 85, 247, 0.12), transparent 70%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .timeline-cosmic::before {
+    animation: twinkle 6s ease-in-out infinite;
+  }
+}
+
+/* Frosted dark panel — the left/right command-center columns + center card. */
+.cosmic-panel {
+  background: rgba(14, 20, 48, 0.6);
+  border: 1px solid theme("colors.cosmic.border");
+  border-radius: 1.25rem;
+  box-shadow: theme("boxShadow.cosmic-panel");
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cosmic-panel {
+    background: rgba(14, 20, 48, 0.45);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    backdrop-filter: blur(14px) saturate(130%);
+  }
+}
+.cosmic-inset {
+  background: rgba(20, 27, 61, 0.55);
+  border: 1px solid theme("colors.cosmic.border");
+  border-radius: 1rem;
+}
+
+/* Neon event node — a glowing dot/icon on the timeline track. Accent color is
+   set per-instance via the --glow custom property (defaults to cosmic blue). */
+.cosmic-node {
+  --glow: 56, 189, 248;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(var(--glow), 0.16);
+  border: 1px solid rgba(var(--glow), 0.5);
+  color: rgb(var(--glow));
+  box-shadow:
+    0 0 0 1px rgba(var(--glow), 0.25),
+    0 0 18px -2px rgba(var(--glow), 0.6);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.cosmic-node:hover,
+.cosmic-node[data-selected="true"] {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow:
+    0 0 0 1px rgba(var(--glow), 0.5),
+    0 0 26px 0 rgba(var(--glow), 0.7);
+}
+
+/* Live-pulse ring — used behind the profile avatar ("النبض الحي"). */
+.pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid rgba(45, 212, 191, 0.7);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-ring {
+    animation: pulse-ring 2.4s ease-out infinite;
   }
 }
 
