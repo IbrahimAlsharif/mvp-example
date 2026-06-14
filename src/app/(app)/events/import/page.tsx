@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
+import { uploadFile, newUploadKey, UploadError, computeChecksum } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
-import { dayKey } from "@/lib/events/date";
+import { resolveImportDate } from "@/lib/events/import-date";
 import { safeEmit } from "@/lib/telemetry";
 
 /**

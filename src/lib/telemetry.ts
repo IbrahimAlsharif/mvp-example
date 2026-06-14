@@ -54,6 +54,8 @@ const ENUM_FIELDS = new Set<string>([
   "action",
   "actor_type",
   "attempted_action",
+  // US-3.5 connection/family structural enums.
+  "tier",
 ]);
 
 const ENUM_TOKEN = /^[a-z0-9_]{1,40}$/;
