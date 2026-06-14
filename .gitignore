@@ -37,3 +37,6 @@ yarn-debug.log*
 yarn-error.log*
 .tsbuildinfo
 *.tsbuildinfo
+
+# Playwright MCP scratch (screenshots, console logs)
+.playwright-mcp/

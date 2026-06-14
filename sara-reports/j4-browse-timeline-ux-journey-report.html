@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UX Journey Report — J4 Browse the Life Timeline</title>
+<style>
+  :root{--navy:#0f172a;--navy2:#1e293b;--gold:#b8961e;--ink:#e2e8f0;--muted:#94a3b8;--card:#172033;--line:#243049;
+    --blocking:#dc2626;--risk:#ea8a0c;--advisory:#3b82f6;--pass:#16a34a;--nc:#64748b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--navy);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+  h1{font-size:26px;margin:0 0 4px} h2{font-size:19px;margin:38px 0 12px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{font-size:15px;margin:20px 0 6px;color:var(--gold)}
+  a{color:#7dd3fc}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .verdict{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;font-size:14px;letter-spacing:.3px}
+  .v-friction{background:rgba(234,138,12,.15);color:#fbbf24;border:1px solid var(--risk)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .kv{font-size:13px} .kv b{color:#fff;display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--gold);margin-bottom:3px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  .p-blocking{background:rgba(220,38,38,.18);color:#f87171;border:1px solid var(--blocking)}
+  .p-risk{background:rgba(234,138,12,.16);color:#fbbf24;border:1px solid var(--risk)}
+  .p-advisory{background:rgba(59,130,246,.16);color:#93c5fd;border:1px solid var(--advisory)}
+  .p-pass{background:rgba(22,163,74,.16);color:#86efac;border:1px solid var(--pass)}
+  .p-nc{background:rgba(100,116,139,.18);color:#cbd5e1;border:1px solid var(--nc)}
+  .sev{font-weight:700}
+  .finding{border-left:4px solid var(--line);padding:4px 0 4px 16px;margin:18px 0}
+  .finding.b{border-color:var(--blocking)} .finding.r{border-color:var(--risk)} .finding.a{border-color:var(--advisory)}
+  .finding h3{margin:0 0 6px;color:#fff;font-size:15.5px}
+  .meta{font-size:12px;color:var(--muted);margin:2px 0 8px}
+  .fix{background:rgba(184,150,30,.08);border:1px solid rgba(184,150,30,.3);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13.5px}
+  .fix b{color:var(--gold)}
+  code{background:#0b1220;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#fcd34d}
+  img{max-width:100%;border:1px solid var(--line);border-radius:10px;margin:8px 0}
+  .imgrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .small{font-size:12px;color:var(--muted)}
+  ul{margin:6px 0} li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>UX Journey Report — J4 · Browse the Life Timeline</h1>
+<p class="sub">Human Timeline Network · <code>/timeline</code> screen · Arabic / RTL · journey-ux live evaluation · 2026-06-14</p>
+
+<div class="card" style="border-color:var(--pass);background:rgba(22,163,74,.07)">
+  <p style="margin:0 0 8px"><span class="pill p-pass">RESOLVED — all 6 findings fixed &amp; verified live · FEAT-TVR</span></p>
+  <p style="margin:0 0 6px">After this evaluation, F1–F6 were implemented and re-verified on the live build (desktop 1440 + mobile 390, AR/RTL) with measured DOM evidence:</p>
+  <ul style="margin:6px 0">
+    <li><b>F1</b> — timeline now renders an Arabic month rail (<code>أبريل 2026 · مايو · يونيو · يوليو</code>) instead of an empty hour grid <span class="small">(<code>HorizontalTimeline.tsx</code>: <code>frameEvents()</code> via rAF replaces <code>tl.fit()</code>)</span></li>
+    <li><b>F2</b> — event chips sit inside the track, no edge clip <span class="small">(margin item/axis 8→16)</span></li>
+    <li><b>F3</b> — "+ إضافة حدث" is one line, 36px on mobile <span class="small">(<code>whitespace-nowrap</code>)</span></li>
+    <li><b>F4</b> — Arabic axis labels (<code>الأحد، 14 يونيو</code>, <code>12:00 ص</code>)</li>
+    <li><b>F5</b> — event-count contrast 2.52:1 → <b>7.81:1</b> <span class="small">(<code>neutral-400</code>→<code>neutral-600</code>)</span></li>
+    <li><b>F6</b> — <code>.tap-target</code> gives a 44px hit area on touch for 14 filter/zoom controls</li>
+  </ul>
+  <p class="small" style="margin:0">Verified by: <code>tsc --noEmit</code> clean · 72/72 tests · before/after screenshots in the run folder. The follow-up items (map tab, keyboard focus, empty/error states, English locale) remain <code>not_checked</code> and are unchanged by this fix.</p>
+</div>
+
+<div class="card">
+  <p style="margin:0 0 10px"><span class="verdict v-friction">USABLE WITH FRICTION</span></p>
+  <p style="margin:0">The screen loads, the events show, and a person can read and navigate. But it does <b>not</b> read as the premium, "future-style" life archive the product promises — and that gap is concrete, not taste. The single highest-impact fix:</p>
+  <div class="fix" style="margin-top:12px"><b>Highest-impact fix →</b> Replace the empty hour-grid track with a content-dense, year-anchored timeline. Today the signature screen is a large white rectangle holding 2 floating chips against meaningless hour ticks (<code>12:00 · 16:00 · 20:00</code>) — that one element is what makes the whole page feel unfinished and un-premium. Fixing it moves the screen from "friction" toward "strong" more than any other change.</div>
+</div>
+
+<h2>Scope &amp; honesty</h2>
+<div class="card">
+  <p style="margin:0 0 8px">Per your request, this run evaluated <b>one screen</b> — the timeline view — not the full J4 journey (export, year→month→day deep navigation, and the map tab were not exercised). Evidence below is from the live dev build at <code>localhost:3000/timeline</code>, authenticated as the seeded <code>pilot.family</code> account, measured via the browser (computed styles, geometry, contrast), at desktop 1440px and mobile 390px, in Arabic/RTL.</p>
+  <p class="small" style="margin:0"><b>Not checked (would need a dedicated pass):</b> keyboard focus order &amp; visible focus rings <span class="pill p-nc">not_checked</span> · loading / empty-timeline / error states <span class="pill p-nc">not_checked</span> · the map tab <span class="pill p-nc">not_checked</span> · year/week/day granularity output <span class="pill p-nc">partial — only month + day seen</span> · English locale <span class="pill p-nc">not_checked — RTL/AR only this run</span>.</p>
+</div>
+
+<h2>Journey identity</h2>
+<div class="card grid">
+  <div class="kv"><b>Journey folder</b><code>.sara/journeys/j4-browse-timeline/</code></div>
+  <div class="kv"><b>Locator map</b>none yet — first run; navigation by session cookie + URL</div>
+  <div class="kv"><b>Persona</b>Family Archivist / Multi-Gen Family (Arabic-first). Elderly Individual = accessibility stress bar.</div>
+  <div class="kv"><b>Business goal</b>Re-experience past events; the "revisit" half of the core bet.</div>
+  <div class="kv"><b>Success signal</b>Feels like a trustworthy, premium life archive; period reachable in &lt;4 clicks.</div>
+  <div class="kv"><b>Platform / locale</b>Web · RTL · ar · desktop 1440 + mobile 390</div>
+</div>
+
+<h2>Evidence</h2>
+<div class="imgrow">
+  <figure style="margin:0"><img src="../.sara/journeys/j4-browse-timeline/runs/ux/web/2026-06-14T15-20/timeline-desktop-month.png" alt="desktop month view"><figcaption class="small">Desktop 1440px — month view. Note the empty track with hour ticks and the right chip clipped at the track edge.</figcaption></figure>
+  <figure style="margin:0"><img src="../.sara/journeys/j4-browse-timeline/runs/ux/web/2026-06-14T15-20/timeline-mobile-390.png" alt="mobile 390 view"><figcaption class="small">Mobile 390px — "+ إضافة حدث" wraps to 3 lines (56px tall); event chip clipped past the right edge.</figcaption></figure>
+</div>
+
+<h2>Findings</h2>
+
+<div class="finding r">
+  <h3>F1 — The signature timeline track is an empty void with the wrong time scale</h3>
+  <p class="meta">Method: Visual &amp; IxD (hierarchy, content density) + Nielsen #2 (match the real world) · Nielsen severity <b>3</b> · <span class="pill p-risk">risk</span></p>
+  <p>The hero element of a "life timeline" product renders as a large white rectangle (≈846×220px) holding 2 small event chips floating against <b>hour-of-day</b> gridlines (<code>12:00 · 16:00 · 20:00 · 00:00 · 04:00 · 08:00</code>). A life archive spans <i>years</i>; hour ticks are meaningless at this altitude and the emptiness reads as "broken / unfinished," which is exactly the "not future-style" feeling you flagged. This is the dominant reason the page doesn't feel premium.</p>
+  <div class="fix"><b>Fix →</b> Anchor the default view to a year/month density that fills the track: cluster events into period markers, show a faint year/month rail (not hours) in the default zoom, and render an inviting populated state even with few events (e.g. soft "your timeline starts here" markers). Reserve hour ticks for the <code>يوم</code> (day) zoom only.</div>
+</div>
+
+<div class="finding r">
+  <h3>F2 — Event chip clipped at the track's right edge (RTL overflow)</h3>
+  <p class="meta">Method: UX-lens floor (clipping/overflow) + RTL integrity · Nielsen severity <b>3</b> · <span class="pill p-risk">risk</span></p>
+  <p>Measured: the <code>تست ٢ 📷</code> chip ends at <b>x=393 in a 390px viewport</b> (clipped past the right edge) on mobile, and on desktop the second event sits hard against the track's right border. In an RTL layout the most-recent event lands at the right edge and gets cut. Users lose part of an event label — and it looks like a bug.</p>
+  <div class="fix"><b>Fix →</b> Add horizontal padding/inset to the track's content area so chips never touch the edge; clamp chip position to keep the full label inside the visible track, or let the track scroll with the chip fully rendered.</div>
+</div>
+
+<div class="finding r">
+  <h3>F3 — "+ إضافة حدث" primary action wraps to 3 lines on mobile</h3>
+  <p class="meta">Method: UX-lens floor (layout integrity) + Visual hierarchy · Nielsen severity <b>2–3</b> · <span class="pill p-risk">risk</span></p>
+  <p>Measured: at 390px the add-event button is <b>56px tall with line-height 20px</b> — the label breaks across three lines inside an orange pill. The single most important action on the screen looks mangled on phones, which is where parents capture moments.</p>
+  <div class="fix"><b>Fix →</b> Give the button <code>white-space:nowrap</code> and let the header reflow (icon-only on the narrowest breakpoint, or move it to a fixed bottom action bar on mobile).</div>
+</div>
+
+<div class="finding r">
+  <h3>F4 — Latin date/time labels inside a fully-Arabic RTL UI</h3>
+  <p class="meta">Method: Nielsen #4 (consistency) + WCAG 3.1 (language) · Nielsen severity <b>3</b> · <span class="pill p-risk">risk</span></p>
+  <p>The whole UI is Arabic (<code>html lang="ar" dir="rtl"</code>), but the timeline axis prints <code>Sun 14 June</code>, <code>Sat 13 June</code>, and <code>12:00…</code> in English. For the Multi-Generation Family and Elderly personas this is jarring and, for some, unreadable. The native date filters also show <code>dd/mm/yyyy</code> (browser-locale English) instead of an Arabic-formatted hint.</p>
+  <div class="fix"><b>Fix →</b> Format axis dates/times with <code>Intl.DateTimeFormat('ar', …)</code> (Arabic month names, Arabic-Indic or localized digits per product choice). Localize or replace the native date inputs with an Arabic-aware date control.</div>
+</div>
+
+<div class="finding r">
+  <h3>F5 — Event-count text fails WCAG AA contrast</h3>
+  <p class="meta">Method: WCAG 1.4.3 (contrast) · measured ratio <b>2.52:1</b> (needs ≥4.5) · Nielsen severity <b>2</b> · <span class="pill p-risk">risk</span></p>
+  <p>The "<code>٢ من ٢ حدثاً</code>" count is <code>rgb(163,163,163)</code> at 12px on white — <b>2.52:1</b>, well below AA. This is meaningful context (how much of your life is captured) rendered nearly invisible, and the Elderly persona will miss it entirely. The like/comment/share labels sit at <code>4.74:1</code> — passing but borderline.</p>
+  <div class="fix"><b>Fix →</b> Darken the count to at least <code>#595959</code> (4.5:1 on white) or bump to 14px+ and a darker weight. Audit all <code>neutral-400</code> text on white in this view.</div>
+</div>
+
+<div class="finding r">
+  <h3>F6 — 18 controls below the 44px tap-target minimum on mobile</h3>
+  <p class="meta">Method: WCAG 2.5.5 / mobile target size · Nielsen severity <b>2–3</b> · <span class="pill p-risk">risk</span></p>
+  <p>At 390px, every filter/view control is 24–32px tall: the circle filters (<code>أنا فقط / العائلة / رابط خاص</code> at 24px), media filters (24px), granularity tabs (28px), and the zoom buttons <code>＋ − ⛶</code> (32×32). The journey map names the <b>Elderly Individual as the most at-risk persona</b>; sub-44px targets are exactly where they fail. None are below ~24px (not a hard catastrophe) but the cluster is real friction.</p>
+  <div class="fix"><b>Fix →</b> Raise interactive controls to ≥44×44 hit area on touch (padding is fine; the visual pill can stay smaller). Prioritize the zoom and circle-filter controls.</div>
+</div>
+
+<div class="finding a">
+  <h3>F7 — Brand title relies on transparent text + background-clip</h3>
+  <p class="meta">Method: Visual/IxD robustness · Nielsen severity <b>1</b> · <span class="pill p-advisory">advisory</span></p>
+  <p>The header brand "الخط الزمني" computes to <code>color: rgba(0,0,0,0)</code> — a gradient clipped to text via <code>-webkit-background-clip</code>. It renders fine in this browser, but if the gradient/clip fails (older engines, forced-colors / high-contrast mode), the title disappears. Low risk; worth a fallback color.</p>
+  <div class="fix"><b>Fix →</b> Set a solid fallback <code>color</code> and guard with <code>@supports</code> for the clipped-gradient treatment.</div>
+</div>
+
+<div class="finding a">
+  <h3>F8 — Filter controls give no visible "no match" / result feedback</h3>
+  <p class="meta">Method: Nielsen #1 (visibility of system status) · Nielsen severity <b>2</b>, unverified state · <span class="pill p-advisory">advisory</span> (escalate after empty-state pass)</p>
+  <p>The circle / date / media filters are present, but with only 2 events I could not confirm what happens on an empty result (does the count update? is there a "no events match" message?). Cognitive-walkthrough Q4 ("did the user see progress?") is unanswered for filtering. Flagged for the empty/error-state pass.</p>
+  <div class="fix"><b>Fix →</b> Verify filtered/empty results show an explicit count change and a friendly "no events match these filters" state, not just a blank track.</div>
+</div>
+
+<h2>Heuristic evaluation (Nielsen)</h2>
+<table>
+  <tr><th>Heuristic</th><th>Issue</th><th>Sev</th></tr>
+  <tr><td>1 · Visibility of status</td><td>Filter result / empty feedback unverified (F8)</td><td class="sev">2*</td></tr>
+  <tr><td>2 · Match the real world</td><td>Hour-of-day scale on a years-long life timeline (F1)</td><td class="sev">3</td></tr>
+  <tr><td>3 · User control / freedom</td><td>OK — exits, tabs, zoom present</td><td class="sev">0</td></tr>
+  <tr><td>4 · Consistency &amp; standards</td><td>Latin labels in an Arabic RTL UI (F4)</td><td class="sev">3</td></tr>
+  <tr><td>5 · Error prevention</td><td>Not exercised this run</td><td class="sev">—</td></tr>
+  <tr><td>6 · Recognition vs recall</td><td>OK — labelled controls, visible circle default</td><td class="sev">0</td></tr>
+  <tr><td>7 · Flexibility / efficiency</td><td>Granularity + zoom present; good</td><td class="sev">0</td></tr>
+  <tr><td>8 · Aesthetic / minimalist</td><td>Empty track void; mobile button wrap; chip clip (F1–F3)</td><td class="sev">3</td></tr>
+  <tr><td>9 · Error recovery</td><td>Not exercised this run</td><td class="sev">—</td></tr>
+  <tr><td>10 · Help &amp; documentation</td><td>Privacy-default banner is a good in-context cue</td><td class="sev">0</td></tr>
+</table>
+<p class="small">*unverified — pending empty-state pass.</p>
+
+<h2>Accessibility (WCAG) summary</h2>
+<table>
+  <tr><th>Criterion</th><th>Result</th><th>Evidence</th></tr>
+  <tr><td>1.4.3 Contrast (text)</td><td><span class="pill p-risk">FAIL</span></td><td>Event count 2.52:1; action labels 4.74:1 (borderline)</td></tr>
+  <tr><td>2.5.5 Target size</td><td><span class="pill p-risk">FAIL (mobile)</span></td><td>18 controls 24–32px tall at 390px (F6)</td></tr>
+  <tr><td>3.1 Language / locale of content</td><td><span class="pill p-risk">FAIL</span></td><td>Latin date/time strings in ar/RTL context (F4)</td></tr>
+  <tr><td>1.3.1 Structure (RTL integrity)</td><td><span class="pill p-risk">FAIL</span></td><td>Chip clipped at track edge (F2)</td></tr>
+  <tr><td>2.4.7 Focus visible</td><td><span class="pill p-nc">not_checked</span></td><td>Keyboard focus order/rings not exercised</td></tr>
+  <tr><td>1.1.1 Non-text content</td><td><span class="pill p-nc">partial</span></td><td>Emoji icons carry meaning; alt-text/aria not audited</td></tr>
+</table>
+
+<h2>Cognitive walkthrough (timeline screen)</h2>
+<table>
+  <tr><th>Step</th><th>Q1 right effect</th><th>Q2 control visible</th><th>Q3 action clear</th><th>Q4 progress shown</th></tr>
+  <tr><td>Read privacy default</td><td>✓</td><td>✓ banner</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Switch granularity</td><td>✓</td><td>✓ tabs</td><td>✓ Arabic labels</td><td><b>✗ track stays empty-looking; no sense of "more shown"</b> (F1)</td></tr>
+  <tr><td>Filter by circle/date</td><td>✓</td><td>✓</td><td>~ small targets (F6)</td><td><b>? unverified</b> (F8)</td></tr>
+  <tr><td>Read an event on the track</td><td>✓</td><td>~ chip clipped (F2)</td><td>✓</td><td>✓ feed card below</td></tr>
+</table>
+
+<h2>Viewport / locale coverage</h2>
+<ul>
+  <li><b>Desktop 1440 · AR/RTL</b> — covered. F1, F2 (edge), F4, F5 observed.</li>
+  <li><b>Mobile 390 · AR/RTL</b> — covered. F2 (clipped), F3 (button wrap), F6 (targets) observed; no horizontal page scroll (good).</li>
+  <li><b>English locale</b> — <span class="pill p-nc">not_checked</span> this run.</li>
+</ul>
+
+<h2>What's already good</h2>
+<div class="card">
+<ul>
+  <li>The in-context <b>privacy-default banner</b> ("أنا فقط") is exactly right for a privacy-anxious persona — visible reassurance before any action.</li>
+  <li>Clean card styling, sensible radii (12–16px) and soft shadows on the EventCard.</li>
+  <li>The circle badge on each event and the orange primary CTA give a clear, consistent accent system.</li>
+  <li>No layout catastrophe, no horizontal scroll on mobile, no overlap of body text — the floor holds.</li>
+</ul>
+</div>
+
+<p class="small" style="margin-top:30px">journey-ux · single-screen evaluation · evidence under <code>.sara/journeys/j4-browse-timeline/runs/ux/web/2026-06-14T15-20/</code>. UX findings reported here; none block journey completion, so the functional verdict is unaffected. Recommend a follow-up pass covering keyboard focus, empty/error states, the map tab, and English locale.</p>
+
+</div>
+</body>
+</html>

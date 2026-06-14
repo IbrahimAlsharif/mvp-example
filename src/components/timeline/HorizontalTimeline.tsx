@@ -101,12 +101,20 @@ export function HorizontalTimeline({
     // that reads as broken. Instead frame the events centred in a window at
     // least as wide as the current zoom span, so the default view is always a
     // content-dense year/month rail.
-    if (items.length > 0) frameEvents(tl, items, zoomRef.current);
+    // Defer to the next frame: setItems triggers vis-timeline's own redraw,
+    // which would otherwise reset the window back to the data range (collapsing
+    // to a ~2-day, hour-scale view). Setting the window after that redraw makes
+    // it stick.
+    if (items.length > 0) {
+      const z = zoomRef.current;
+      requestAnimationFrame(() => frameEvents(tl, events, z));
+    }
   }, [events]);
 
   /** Centre the events in a window no narrower than the current zoom span. */
-  function frameEvents(tl: Timeline, items: DataItem[], z: ZoomLevel) {
-    const times = items.map((i) => new Date(i.start as Date).getTime());
+  function frameEvents(tl: Timeline, evs: EventVM[], z: ZoomLevel) {
+    if (evs.length === 0) return;
+    const times = evs.map((e) => new Date(e.occurredOn).getTime());
     const lo = Math.min(...times);
     const hi = Math.max(...times);
     const center = (lo + hi) / 2;
