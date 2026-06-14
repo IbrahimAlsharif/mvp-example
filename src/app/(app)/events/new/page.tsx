@@ -9,7 +9,6 @@ import {
   ArrowRight,
   ImagePlus,
   Sparkles,
-  MapPin,
   CalendarDays,
   X,
   Image as ImageIcon,
@@ -21,6 +20,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { CircleSelector } from "@/components/CircleSelector";
+import { CapturePermission } from "@/components/capture/CapturePermission";
+import { LocationField } from "@/components/capture/LocationField";
+import { capturePhotoFromStream } from "@/lib/capture/photo";
 import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
 import { dayKey } from "@/lib/events/date";
@@ -53,7 +55,11 @@ function NewEventInner() {
   const [circle, setCircle] = useState<PrivacyCircle>("ME_ONLY"); // G1 default
   const [legacyConsent, setLegacyConsent] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  // Location is OFF by default (US-0.2 AC-4): empty unless the user adds one.
+  // `locationSuggested` marks an auto-derived value (EXIF / device geo) that the
+  // user must confirm or clear before it sticks (AC-10 / US-2.2 AC-3).
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationSuggested, setLocationSuggested] = useState(false);
   const [dateFromPhoto, setDateFromPhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,16 +75,25 @@ function NewEventInner() {
   const persistedIds = items.filter((i) => i.status === "persisted").map((i) => i.publicId!);
   const canSave = !uploading && !submitting && (note.trim().length > 0 || persistedIds.length > 0);
 
-  async function onFiles(files: FileList | null) {
+  function onFiles(files: FileList | null) {
     if (!files) return;
-    for (const file of Array.from(files)) {
+    void addFiles(Array.from(files));
+  }
+
+  async function addFiles(files: File[]) {
+    for (const file of files) {
       const idx = items.length;
       const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
       setItems((prev) => [...prev, { name: file.name, type: file.type, status: "uploading", previewUrl }]);
 
-      // Auto-fill date + location from the photo's own metadata (no manual step).
+      // Auto-derive date + location from the photo's own metadata. The location
+      // is a SUGGESTION the user must confirm/clear (US-2.2 AC-3), never silently
+      // committed; the date pre-fills but stays freely editable.
       readExif(file).then((exif) => {
-        if (exif.lat != null && exif.lng != null) setLocation({ lat: exif.lat, lng: exif.lng });
+        if (exif.lat != null && exif.lng != null) {
+          setLocation({ lat: exif.lat, lng: exif.lng });
+          setLocationSuggested(true);
+        }
         if (exif.date) {
           setDate(exif.date);
           setDateFromPhoto(true);
@@ -95,6 +110,17 @@ function NewEventInner() {
         setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, status: "failed" } : it)));
         setError(reason);
       }
+    }
+  }
+
+  // A granted live camera stream → capture one frame → into the same upload
+  // pipeline as an uploaded file (US-0.2 AC-2; pipeline owned by US-1.2).
+  async function onLiveCamera(stream: MediaStream) {
+    try {
+      const file = await capturePhotoFromStream(stream);
+      await addFiles([file]);
+    } catch {
+      setError("capture_failed");
     }
   }
 
@@ -256,6 +282,14 @@ function NewEventInner() {
           </div>
         </section>
 
+        {/* Just-in-time capture (US-0.2): camera/mic ask only when chosen, and a
+            denial/unsupported never blocks — it falls back to the upload dropzone
+            below. The note-only path above needs zero permissions (AC-11). */}
+        <section className="flex flex-wrap gap-2" data-testid="capture-controls">
+          <CapturePermission modality="camera" onLiveStream={onLiveCamera} onFallback={() => {}} />
+          <CapturePermission modality="mic" onLiveStream={() => {}} onFallback={() => {}} />
+        </section>
+
         {/* Media — type is detected from the file, no manual picker */}
         <section className="flex flex-col gap-3">
           <label
@@ -338,11 +372,19 @@ function NewEventInner() {
           {dateFromPhoto && (
             <span className="text-xs text-neutral-500">{t("dateFromPhoto")}</span>
           )}
-          {location && (
-            <span className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-medium text-emerald-700" data-testid="location-badge">
-              <MapPin className="h-3.5 w-3.5" aria-hidden /> {t("locationFromPhoto")}
-            </span>
-          )}
+          <LocationField
+            value={location}
+            suggested={locationSuggested}
+            onChange={(loc, sugg) => {
+              setLocation(loc);
+              setLocationSuggested(sugg);
+            }}
+            onConfirmSuggestion={() => setLocationSuggested(false)}
+            onClear={() => {
+              setLocation(null);
+              setLocationSuggested(false);
+            }}
+          />
         </section>
 
         {/* Privacy */}
