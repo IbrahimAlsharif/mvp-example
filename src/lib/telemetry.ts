@@ -49,6 +49,11 @@ const ENUM_FIELDS = new Set<string>([
   "cohort_week",
   "diagnosis",
   "precision_mode",
+  // US-3.4 moderation structural enums.
+  "scope",
+  "action",
+  "actor_type",
+  "attempted_action",
 ]);
 
 const ENUM_TOKEN = /^[a-z0-9_]{1,40}$/;

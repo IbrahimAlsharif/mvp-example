@@ -256,7 +256,7 @@ export function CosmicCommandCenter({
 
       {/* Event popup — opened by clicking a timeline node or its hover preview. */}
       {openEvent && (
-        <EventModal event={openEvent} ownerName={ownerName} onClose={() => setOpenId(null)} />
+        <EventModal event={openEvent} ownerName={ownerName} editable={openEvent.isOwn ?? false} onClose={() => setOpenId(null)} />
       )}
     </div>
   );

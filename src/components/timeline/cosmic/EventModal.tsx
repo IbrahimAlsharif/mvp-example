@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
+import type { PrivacyCircle } from "@prisma/client";
 import { EventCard } from "@/components/EventCard";
+import { ChangeCircleControl } from "./ChangeCircleControl";
 import type { EventVM } from "@/lib/events/view";
 
 /**
@@ -22,15 +24,19 @@ import type { EventVM } from "@/lib/events/view";
 export function EventModal({
   event,
   ownerName,
+  editable = false,
   onClose,
 }: {
   event: EventVM;
   ownerName: string;
+  /** True when the viewer owns this event and may change its circle (US-3.2). */
+  editable?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations("cosmic");
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [circle, setCircle] = useState<PrivacyCircle>(event.circle);
 
   // Esc to close + a minimal Tab focus trap, and restore focus on unmount.
   const onKeyDown = useCallback(
@@ -98,7 +104,15 @@ export function EventModal({
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
-        <EventCard event={event} ownerName={ownerName} />
+        <EventCard event={{ ...event, circle }} ownerName={ownerName} />
+        {editable && (
+          <ChangeCircleControl
+            eventId={event.id}
+            current={circle}
+            hasMedia={event.media.length > 0}
+            onChanged={setCircle}
+          />
+        )}
       </div>
     </div>
   );

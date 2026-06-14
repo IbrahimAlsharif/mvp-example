@@ -39,6 +39,7 @@ export default async function TimelinePage({
     media: e.media.map((m) => ({ publicId: m.publicId })),
     lat: e.locationLat,
     lng: e.locationLng,
+    isOwn: e.accountId === account.id,
   }));
 
   // Content-blind browse signal (US-0.3 taxonomy). A revisit to a populated

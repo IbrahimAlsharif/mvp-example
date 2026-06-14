@@ -98,6 +98,8 @@ model Account {
   connectionsA Connection[] @relation("ConnectionA")
   connectionsB Connection[] @relation("ConnectionB")
   sentRequests Connection[] @relation("ConnectionRequester")
+
+  moderationCases ModerationCase[]
 }
 
 // An accepted or pending link between two accounts (the social graph edge).
@@ -237,4 +239,64 @@ model ShareLink {
   createdAt DateTime  @default(now())
 
   @@index([eventId])
+}
+
+// ─── Moderation (US-3.4) ──────────────────────────────────────────────────────
+// Human-in-the-loop only. A moderation hold is an ACCESS/VISIBILITY restriction
+// layered OVER the durable media store — it NEVER deletes or permanently locks
+// the bytes (G2/G3). Restoration is a metadata/access operation, not a re-upload.
+// Every account-affecting action passes through lib/moderation/guard, which
+// rejects any non-human actor (AC-10). There is NO scanning-driven referral
+// pipeline: a case is only ever opened from actual human knowledge.
+
+enum ModerationScope {
+  ITEM // a single event/item is access-held
+  ACCOUNT // the whole account is access-held (appeal flow stays reachable)
+}
+
+enum ModerationStatus {
+  OPEN // enqueued from a human report, awaiting human review
+  HELD // access hold applied (store untouched)
+  APPEALED // owner has appealed; routed back to human review
+  CLEARED // review cleared it; access restored intact
+  REPORTED // human confirmed; moved to secure preservation store (§2258A(h))
+  ESCALATED // target review window elapsed with no decision (never auto-actioned)
+}
+
+// `source` is always a human report — no scan source exists. `reviewerId` and the
+// timestamps make the human-in-the-loop chain auditable (AC-9). No row here ever
+// represents an automated account deletion/lock.
+model ModerationCase {
+  id          String           @id @default(cuid())
+  accountId   String
+  account     Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  eventId     String? // null for an account-scope case
+  scope       ModerationScope
+  status      ModerationStatus @default(OPEN)
+  source      String           @default("human_report") // never a scan source (AC-2)
+  reviewerId  String? // the human reviewer who last acted (AC-9); never automated
+  reviewDueAt DateTime? // target window; on elapse → ESCALATED, never auto-actioned (AC-12)
+  appealedAt  DateTime?
+  restoredAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  actions ModerationAction[]
+
+  @@index([accountId])
+  @@index([status])
+}
+
+// Append-only audit trail. Every entry records a HUMAN actor + timestamp; a
+// non-human actor can never reach here because the choke point rejects it first.
+model ModerationAction {
+  id        String         @id @default(cuid())
+  caseId    String
+  case      ModerationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actorType String // always "human_reviewer" for an executed action (AC-3/AC-10)
+  actorId   String? // the human reviewer's id (audit)
+  action    String // hold | clear | restore | report
+  createdAt DateTime       @default(now())
+
+  @@index([caseId])
 }
