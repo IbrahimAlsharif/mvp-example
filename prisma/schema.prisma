@@ -33,6 +33,16 @@ enum AccountStatus {
   ACTIVE
 }
 
+// Per-item legacy-consent decision (US-4.1). Tri-state: GRANTED / DENIED record
+// an explicit owner choice; UNSET is the default and is treated IDENTICALLY to
+// DENIED (silence = no future heir access). Captured + exported only — NO code
+// path reads this to grant access at MVP (inheritance is deferred, G9).
+enum LegacyConsent {
+  UNSET
+  GRANTED
+  DENIED
+}
+
 // A connection's tier governs which of an author's events a counterpart can see
 // (US — social graph). FAMILY can see the author's FAMILY + PUBLIC_UNLISTED
 // events; GENERAL can see only PUBLIC_UNLISTED. ME_ONLY is never shared. This
@@ -178,7 +188,12 @@ model Event {
   locationLat   Float?
   locationLng   Float?
   circle        PrivacyCircle @default(ME_ONLY) // ATOMIC with event (US-3.1 AC-9)
-  legacyConsent Boolean       @default(false) // ATOMIC consent flag (US-4.1 / G5)
+  legacyConsent Boolean       @default(false) // legacy boolean (kept; mirrors GRANTED)
+  // Tri-state consent + its decision timestamp, committed ATOMICALLY with the
+  // event/circle (US-4.1 AC-1/AC-3). UNSET == no heir access (AC-2). Never an
+  // access backdoor (AC-8/G9).
+  legacyConsentValue LegacyConsent @default(UNSET)
+  legacyConsentAt    DateTime? // ISO-8601 decision time, set when GRANTED/DENIED
   submitKey     String        @unique // idempotent submit (US-1.1 AC-8)
   version       Int           @default(1) // versioning seam (US-1.1 AC-16)
   deletedAt     DateTime? // soft-delete / recoverable (G2)

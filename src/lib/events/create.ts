@@ -1,6 +1,7 @@
-import type { Event, PrivacyCircle, Prisma } from "@prisma/client";
+import type { Event, LegacyConsent, PrivacyCircle, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { acceptedConnectionsByTier } from "@/lib/connections";
+import { resolveConsent } from "@/lib/events/consent";
 
 /**
  * Create a timeline event as an ATOMIC multi-part write (US-1.1 AC-7).
@@ -21,6 +22,8 @@ export type CreateEventInput = {
   occurredOn: Date;
   circle: PrivacyCircle;
   legacyConsent: boolean;
+  /** Explicit tri-state consent (US-4.1). Falls back to the boolean / per-circle default. */
+  legacyConsentValue?: LegacyConsent;
   mediaPublicIds: string[];
   submitKey: string;
   location?: { lat: number; lng: number } | null;
@@ -56,13 +59,22 @@ export async function createEvent(input: CreateEventInput): Promise<CreateEventR
         }
       }
 
+      // Tri-state consent committed ATOMICALLY with the event + circle (AC-1).
+      const consent = resolveConsent({
+        circle: input.circle,
+        value: input.legacyConsentValue,
+        legacyBoolean: input.legacyConsent,
+        now: new Date(),
+      });
       const created = await tx.event.create({
         data: {
           accountId: input.accountId,
           note: hasNote ? input.note!.trim() : null,
           occurredOn: input.occurredOn,
           circle: input.circle, // atomic with the event (US-3.1 AC-9)
-          legacyConsent: input.legacyConsent, // atomic consent flag (US-4.1/G5)
+          legacyConsent: consent.boolean, // legacy boolean mirror
+          legacyConsentValue: consent.value, // tri-state (US-4.1 AC-1/AC-3)
+          legacyConsentAt: consent.at, // ISO-8601 decision time (UNSET → null)
           submitKey: input.submitKey,
           locationLat: input.location?.lat ?? null,
           locationLng: input.location?.lng ?? null,

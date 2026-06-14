@@ -63,6 +63,9 @@ export type ExportedEvent = {
   location: { lat: number; lng: number } | null;
   circle: string;
   legacyConsent: boolean;
+  /** Tri-state consent + its decision timestamp, exported intact (US-4.1 AC-7). */
+  legacyConsentValue: string;
+  legacyConsentAt: string | null;
   version: number;
   createdAt: string;
   media: ExportedMedia[];
@@ -139,6 +142,8 @@ export async function buildAccountExport(accountId: string): Promise<AccountExpo
         : null,
     circle: e.circle,
     legacyConsent: e.legacyConsent,
+    legacyConsentValue: e.legacyConsentValue,
+    legacyConsentAt: e.legacyConsentAt ? e.legacyConsentAt.toISOString() : null,
     version: e.version,
     createdAt: e.createdAt.toISOString(),
     media: e.media.map((m) => ({

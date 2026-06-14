@@ -19,7 +19,8 @@ function media(checksum: string, mimeType = "image/jpeg") {
 function event(id: string, media_: ReturnType<typeof media>[]): ExportedEvent {
   return {
     id, note: null, occurredOn: "2026-01-01T12:00:00.000Z", location: null,
-    circle: "ME_ONLY", legacyConsent: false, version: 1, createdAt: "2026-01-01T12:00:00.000Z",
+    circle: "ME_ONLY", legacyConsent: false, legacyConsentValue: "UNSET", legacyConsentAt: null,
+    version: 1, createdAt: "2026-01-01T12:00:00.000Z",
     media: media_,
   };
 }
