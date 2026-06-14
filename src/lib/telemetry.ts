@@ -42,6 +42,8 @@ const ENUM_FIELDS = new Set<string>([
   "access_via",
   "file_size_bucket",
   "duration_bucket",
+  "mode",
+  "engine",
 ]);
 
 const ENUM_TOKEN = /^[a-z0-9_]{1,40}$/;

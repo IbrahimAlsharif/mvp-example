@@ -33,6 +33,11 @@ const schema = z.object({
 
   RESEND_API_KEY: z.string().optional().default(""),
   EMAIL_FROM: z.string().optional().default("Human Timeline <noreply@localhost>"),
+
+  // AI compose (US-AI). Optional: when empty, the compose endpoint uses a local
+  // heuristic stub so the feature works without a key; set it to switch to Claude.
+  ANTHROPIC_API_KEY: z.string().optional().default(""),
+  AI_MODEL: z.string().optional().default("claude-haiku-4-5-20251001"),
 });
 
 export const env = schema.parse(process.env);

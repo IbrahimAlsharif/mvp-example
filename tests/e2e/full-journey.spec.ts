@@ -37,12 +37,13 @@ test("create a private photo event; a second account cannot reach its media", as
     await page.goto(signupBody.devConfirmUrl);
     await expect(page).toHaveURL(/\/timeline/);
 
-    // --- create an event with an uploaded photo ---
+    // --- create an event with an uploaded photo (single-page glass form) ---
     await page.getByTestId("add-event").click();
     await expect(page).toHaveURL(/\/events\/new/);
-    await page.getByRole("textbox").first().fill("ذكرى عائلية خاصة");
+    await page.getByTestId("note-input").fill("ذكرى عائلية خاصة");
 
-    // upload a (fake) JPEG; bytes are arbitrary — checksum just has to round-trip
+    // upload a (fake) JPEG; bytes are arbitrary — checksum just has to round-trip.
+    // Media type is auto-detected from the file (no manual kind picker).
     await page.getByTestId("file-input").setInputFiles({
       name: "photo.jpg",
       mimeType: "image/jpeg",
