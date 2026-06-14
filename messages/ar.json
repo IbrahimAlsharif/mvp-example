@@ -139,7 +139,9 @@
     "me": "أنا",
     "today": "اليوم",
     "yesterday": "أمس",
-    "daysAgo": "قبل {n} يوماً"
+    "daysAgo": "قبل {n} يوماً",
+    "mediaUnavailable": "الوسائط غير متاحة مؤقتاً — لم تُحذف.",
+    "mediaRetry": "إعادة المحاولة"
   },
   "timeline": {
     "zoomDay": "يوم",

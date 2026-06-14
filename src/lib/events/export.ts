@@ -115,14 +115,19 @@ function buildManifest(events: ExportedEvent[]): ExportManifest {
 }
 
 export async function buildAccountExport(accountId: string): Promise<AccountExport> {
-  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  // Read account + events in ONE transaction so the export is a consistent
+  // point-in-time snapshot (US-1.4 AC-11): a concurrent create/edit during a
+  // long export can't produce a torn read. Read-only — no writes, so the export
+  // never mutates, deletes, or locks the source (AC-12, G2).
+  const [account, events] = await prisma.$transaction([
+    prisma.account.findUnique({ where: { id: accountId } }),
+    prisma.event.findMany({
+      where: { accountId, deletedAt: null },
+      orderBy: { occurredOn: "asc" },
+      include: { media: { where: { deletedAt: null } } },
+    }),
+  ]);
   if (!account) throw new Error("account_not_found");
-
-  const events = await prisma.event.findMany({
-    where: { accountId, deletedAt: null },
-    orderBy: { occurredOn: "asc" },
-    include: { media: { where: { deletedAt: null } } },
-  });
 
   const exportedEvents: ExportedEvent[] = events.map((e) => ({
     id: e.id,

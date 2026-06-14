@@ -18,6 +18,7 @@ export async function GET() {
     throw e;
   }
 
+  emit("export_requested", {});
   const data = await buildAccountExport(account.id);
   // Self-verify the manifest before delivery (US-1.4 AC-4). A read-only check;
   // it never mutates the source. A mismatch is surfaced as a content-blind
