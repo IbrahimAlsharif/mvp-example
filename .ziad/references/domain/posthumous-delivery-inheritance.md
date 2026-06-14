@@ -134,5 +134,25 @@ a documented vendor standard — treat as analyst risk, not verified benchmark.)
 - Whether HTN captures explicit, per-item content consent for posthumous release (RUFADAA gate).
 - Whether HTN delivers heirs a **download/export** or attempts account handoff.
 - HTN's perpetual-funding / key-custody / escrow answer for the decades promise (the unsolved crux).
-- No specific named digital-legacy platform shutdown-with-data-loss case was confirmed in this pass;
-  the vendor-survival risk is structural/analytic, not yet evidenced by a documented incident.
+- ~~No specific named digital-legacy platform shutdown-with-data-loss case was confirmed in this pass;
+  the vendor-survival risk is structural/analytic, not yet evidenced by a documented incident.~~
+  **RESOLVED 2026-06-14 → see Refresh below** (SafeBeyond defunct; Legacy Locker "went dark").
+
+## Refresh 2026-06-14
+
+New evidence on named-vendor posthumous delivery and — decisively — the **vendor-survival** crux. This pass **closes** the prior open item that "no specific digital-legacy shutdown-with-data-loss case was confirmed."
+
+### Resolved: the category's failure mode is now evidenced, not just analytic
+- **SafeBeyond is DEFUNCT.** The flagship posthumous-messaging vendor this file previously treated as *live* (E2E "trustee" model, date/event/geo triggers, **25-year** delivery promise) **ceased operations ~July 2022**; safebeyond.com and /plans are **unreachable in June 2026** (connection refused / fetch error, independently reproduced) — *authority: synthesis (live fetch) + analysis (Dealroom/Crunchbase status)*. Funded (~$1.1M), Munich Re distribution partnership, founder-motivated by a dying spouse — **gone in ~8 years**. A family that entrusted a child's messages had its delivery promise **silently broken**. Fate of stored user data: no official notice loadable.
+- **Legacy Locker "went dark."** Acquired by PasswordBox (Nov 2013), customers migrated over ~60 days, then the service went dark — *authority: analysis (The Digital Beyond / TechCrunch / PRNewswire)*. The Digital Beyond's "RIP Digital Legacy Startups" registry tracks **~26 defunct** companies. (Ironically, thedigitalbeyond.com itself returned connection-refused on direct fetch — the canonical registry of dead services is itself decaying; re-check via Wayback.)
+- **Lesson:** the dominant failure mode is **vendor disappearance, not breach.** Section 3's "capsule must outlive the company" is no longer a hypothetical — it is the observed category norm. This **strengthens H-D3** (off-platform/escrow release independent of vendor survival).
+
+### New competitor mechanics
+- **GoodTrust (live 2026)** — automated **dead-man's-switch**: owner picks a check-in cadence (**1-4 times per month or year**); **3 consecutive missed** check-in replies fires it, sending Future Messages (text/photo/video, email or posted to social) **and** unlocking assigned-contact management of Sites & Socials, Documents, Devices, Will & Directives — *authority: official (GoodTrust Support + future-message page)*. **Inactivity proxy, not verified death** (no death certificate / third-party confirmation) → Model A false-positive risk, and delivery depends on recipient email staying valid for decades. Founded **2020 by Rikard Steiber** (ex-Google), VC seed-funded (not acquired), **~$7.5M-$8.4M** total (prior "~$13M" upper bound is unsupported — drop it), **NerdWallet #1** estate-planning **2024 & 2025 only** (no 2026 rating). *AES-256-at-rest claim asserted previously but NOT re-verified this pass — confirm before relying.*
+- **Evaheld (live 2026; new to this file)** — Sydney; co-founder/CEO Michelle Gomes; ABN 80 656 838 505. **Human-coordinator trigger** (Model B variant): nominate **one trusted coordinator** who knows messages exist, where stored, and which conditions trigger delivery — *authority: analysis (Evaheld blog)*. Bundles **advance-care-planning** (Advance Care Directives, Enduring Guardian, QR emergency-access card); posthumous/auto future-messaging **gated to paid Full Access tier** — *authority: official (evaheld.com/plans)*. **Discloses NO encryption standard anywhere** (no AES-256 / E2E) — a real gap vs GoodTrust for intimate child media. How Evaheld *itself* verifies death and releases content is **undocumented** — the "coordinator notifies Evaheld to release" step is *authority: synthesis*, not a stated mechanism.
+
+### Family expectation (single-source caveat)
+- Families want **both** emotional presence ("a sense of the person behind the paperwork" — specific memories, not generic farewells) **and** practical continuity (funeral wishes, documents, credentials, contacts), **kept separate** — *authority: analysis (vendor-authored, single source: Evaheld blog; conflict of interest — corroborate with independent grief/estate research before treating as established)*. Implication for HTN's Future Capsule: **two distinct expectation tracks** (intimate memory vs practical handoff) that should not be collapsed.
+
+### Excluded (refuted this pass)
+- The prior "double-edged grief / 'inestimable comfort' / algorithmic anniversary-resurfacing" claim is **refuted as-sourced** — the cited IE School article supports only a general "digital afterlife can impede grief (painkiller)" point; the differential-impact and resurfacing framing is **not in the source**. Re-source from Facebook-memorialization (Brubaker et al.) + continuing-bonds literature before reusing.

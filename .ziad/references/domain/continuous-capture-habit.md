@@ -92,3 +92,68 @@ lacks, and it manufactures a recurring *revisit* trigger.
 - HTN's reminder/trigger model — is there an external trigger, or does it rely on the user
   remembering to open the app?
 - Whether lapse detection + early (<7 day) re-engagement is instrumented for the MVP.
+
+## Refresh 2026-06-14
+
+New verified facts (delta beyond the base file's habit-loop / resurfacing / 3–7 day window content):
+
+### Fogg prompt taxonomy — match the prompt to motivation×ability — authority: official
+- A behavior fires only when motivation, ability, and a prompt converge; a missing/mistimed
+  prompt kills capture even from a willing parent (BehaviorModel.org, BJ Fogg, Stanford).
+- Three prompt types: **Facilitator** (high motivation, low ability → make it one-tap),
+  **Signal** (both high → simple reminder), **Spark** (boost motivation when ability is high).
+- Implication: a single generic daily notification is the wrong instrument. A motivated parent
+  needs a **Facilitator (kill capture friction)**, not a guilt **Spark**. Sharpens the file's
+  existing "frictionless capture is the metric" lesson with a concrete prompt model.
+
+### Resurfacing safety — upgrade exclusion rules to OPT-IN + granular — authority: analysis
+- Automated resurfacing **retraumatizes abuse survivors** — resurfaced abuser photos trigger
+  panic, nausea, PTSD-grade distress lasting days (The Conversation / N. Little, Univ. Alberta).
+- Research recommendation: resurfacing should be **opt-IN (not opt-out)**, with exclusion controls
+  that are accessible, easy, trauma-sensitive, and **never shift the burden onto the victim**.
+  (Recommended best practice, NOT a legal mandate — do not overstate as required.)
+- Control-surface benchmark: Google Photos = two-tier **"Show less"** (suppress person, allow group
+  shots) vs **"Blocked"** (never surface) + hide-date ranges (Android Police).
+- **Upgrades** §3's generic "exclude deceased/ex/low-quality" note: the standard is now opt-in +
+  per-person/per-date granularity. (Separate notification-mute-without-disable: synthesis, uncited.)
+
+### Reject streak/guilt mechanics (now source-backed) — authority: analysis (tier-3)
+- Duolingo-style loss-aversion streaks manufacture anxiety/guilt; a streak on "days you logged your
+  child" would be coercive about intimate loss. Confirms §2/Lesson 2 — drive revisits with
+  resurfacing **value**, not loss aversion.
+
+### Decades-durability — competitor survival evidence — authority: analysis
+- **SafeBeyond** (post-mortem message vault, founded 2014, M. Zur, ~$1.1M raised) **ceased operations
+  ~July 2022** — died within ~8 years selling the exact "deliver after death" promise (CB Insights /
+  IT History Society).
+- **GoodTrust** (2020, 700K+ members) and **StoryWorth** (35M+ stories, ~$1.5–2M rev 2024) survive.
+  StoryWorth hedges digital fragility with a **printed book** → export-to-print / inheritance handoff
+  is a durability pattern HTN should emulate. Durability is achievable but NOT guaranteed.
+
+### Resurfacing scale + Timehop moat update — authority: analysis
+- Facebook On This Day ~60M daily visitors / 155M notification subscribers — re-cite to the **March
+  2016** TechCrunch article (not the 2015 launch story); data ~10 yrs stale.
+- **Timehop lost Instagram API access (Dec 2024)**, degrading its borrowed-content feed. HTN **owns**
+  its source memories → structurally stronger, more durable resurfacing moat than the precedents.
+
+### Benchmark calibration — authority: analysis
+- Strong performers ~30–40% D1 / 10–15% D7 / 5–8% D30; medians ~25% / 8% / 4% (UXCam→AppsFlyer 2025).
+  These are **blended cross-category targets** — do NOT benchmark a decades-horizon legacy app on
+  blended D30. Corroborates §1's "~3 of 4 lost within a month."
+
+### Resolved unknowns this pass
+- Resurfacing exclusion logic → opt-IN + per-person/per-date (concrete standard, upgrades §3).
+- Streak appropriateness for legacy → reject (now source-backed).
+- Trigger model → Fogg-matched prompts, not one generic notification.
+- Category decades-survivability → partially resolved via SafeBeyond(dead) vs GoodTrust/StoryWorth(alive).
+
+### Still open (carry forward)
+- No digital-preservation-standard source here (OAIS / fixity / format obsolescence) — see the
+  [media-durability](media-durability.md) Refresh, which now covers it. Durability arguments should
+  cite that file rather than competitor anecdotes alone.
+- No CSAM/child-safety-standard source despite capturing intimate child images — see the
+  [privacy-circles-consent](privacy-circles-consent.md) Refresh (§B) for the now-researched floor.
+- Primary-sourced TTFV threshold + first-session-aha multiplier (15-min / 2–3× figures were refuted
+  as not-in-source; only the qualitative TTFV-as-activation-lever point survives).
+- Evaheld status: now confirmed live 2026 (see posthumous-delivery Refresh); StoryWorth founding year
+  (2011 vs 2013) unreconciled.

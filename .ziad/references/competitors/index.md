@@ -75,9 +75,12 @@ related: [k-project-product-profile, k-ref-competitor-tinybeans, k-ref-competito
   inheritance** — only pre-composed messages release, the timeline does not transfer.
 - **GoodTrust** — `official`. Estate platform (attorney will+trust+vault) + scheduled
   Future Messages. Flat **$149**. AES-256. Web-primary.
-- **SafeBeyond** — `synthesis` (site unreachable, **likely dormant**). 2015 "world's
+- **SafeBeyond** — **CONFIRMED DEFUNCT (2026-06-14)** — ceased operations ~July 2022;
+  safebeyond.com + /plans unreachable June 2026 (independently reproduced). 2015 "world's
   first posthumous delivery"; notable design = date+event+**geo** triggers + **2-person
-  trustee death verification** (the most concrete human-gate found).
+  trustee death verification** (the most concrete human-gate found). Founded 2014 (M. Zur,
+  Tel Aviv), ~$1.1M raised, Munich Re distribution — the category's clearest cautionary
+  case: funded + insurer-backed, still gone in ~8 yrs. → see posthumous-delivery Refresh.
 - **Time Guardian / Athar** — `official`. **Blockchain (Ternoa) + 5-TEE key split** —
   strongest durability/self-custody claim; crypto-seedphrase inheritance; Death/Group-
   Consent protocols. Niche (Web3). **Play 1K+ installs.**
@@ -130,5 +133,6 @@ related: [k-project-product-profile, k-ref-competitor-tinybeans, k-ref-competito
 ## Remaining unknowns
 - Traction for Timelines, ArchiveME, My Heartspace, Evaheld, SafeBeyond, Athar/iOS — UNVERIFIED.
 - Whether any "privacy-first" rival actually auth-gates media URLs (all UNVERIFIED except Trustworthy by design).
-- SafeBeyond operational status (site down — possible dormancy; re-check).
+- ~~SafeBeyond operational status (site down — possible dormancy; re-check).~~
+  **RESOLVED 2026-06-14:** confirmed defunct, ceased ops ~July 2022 (site unreachable, reproduced).
 - Export-format support for every Preserve player except StoryWorth.

@@ -86,3 +86,30 @@ HTN stores intimate child/family media → GDPR child-data regime applies.
 - HTN's actual storage/CDN stack and whether its media URLs are already signed/expiring.
 - Whether HTN has a guardian consent + erasure surface designed for the MVP.
 - Target window for "circle-change propagation" (the QC scenario states a window but no value).
+
+## Refresh 2026-06-14
+
+New since original (original covered GDPR Art.8 + circle/revocation/URL basics; this pass adds the US/UK regimes, CSAM mechanics, and durability evidence).
+
+### A. Child-data floor is a TWO-regime stack, not GDPR-only — authority: analysis + official
+- **COPPA (US) = under-13**, triggered by "directed to children" OR "actual knowledge" — structurally different from GDPR's 13-16 band. HTN must satisfy **both**. *(analysis — Koley Jessen reading of the FTC COPPA Rule)*
+- **2025 COPPA amendments (eff. 21 Jun 2025): SEPARATE verifiable parental consent for third-party disclosure** — consent to collection/use ≠ consent to disclose outward. Decouple "share-in-circle" from "disclose-to-processor/AI-vendor." *(official — FTC press release / Federal Register)*
+- **2025 COPPA prohibits INDEFINITE child-data retention**, requires a published written retention policy, and expands PII to biometrics (voiceprints/faceprints/genetic). Decades-retention = state a specific lawful purpose; the bar is indefinite retention *without* a documented purpose, not an outright ban. *(analysis — Koley Jessen)*
+- **UK Children's Code = 15 design-level standards** for any service "likely to be accessed by children": high-privacy defaults, geolocation OFF, profiling OFF, no nudging — attach by design even with a parent account holder; enforced via UK GDPR/DPA 2018. *(official — ICO)*
+- Legal-precision fix to existing notes: under GDPR the **operator is normally the data controller**, not the parent — write consent language as "single accountable guardian per child," not "parent = controller." *(analysis — verifier correction)*
+
+### B. CSAM / child-safety: no mandate to blanket-scan — authority: official
+- **18 U.S.C. 2258A: no duty to monitor/search/screen/scan**; reporting triggers only on "actual knowledge" → NCMEC CyberTipline. Auto-scanning intimate child media is a chosen high-false-positive risk. *(official — statute §2258A(f)/(a))*
+- **A completed CyberTipline report = 1-year preservation obligation** in a secure, access-limited store (§2258A(h)) → quarantined moderation store, separate from user-facing memory storage, NOT deletion. *(official — statute)*
+- **EU ePrivacy voluntary-scanning derogation expired 3 Apr 2026** (extension failed; "Chat Control 2.0" unresolved). No clear EU basis to voluntarily scan. *(analysis — IAPP/Freshfields/Digital Watch corroborated)*
+- Scope caveat: §2258A and the EU derogation are written for interpersonal *messaging*; whether a private family-memory **store** is in scope is unsettled — run an applicability analysis before asserting the law forbids/enables scanning HTN's media. *(synthesis — verifier scope caveat)*
+
+### C. Competitor circle specifics — authority: official
+- **FamilyAlbum (MIXI, Japan):** admin-invite, immediate removal, **non-searchable** albums; Japan operator = cross-border data-residency consideration for EU/UK child data. *(official — FamilyAlbum Help Center)*
+- **Apple Family Sharing:** specifically resists casual removal of a **child** account (move/delete only) — child-protection pattern HTN should copy. *(official — Apple Support)*
+- **Google Photos partner sharing is 1-to-1, NOT a multi-member circle** — cite only for two-sided opt-in + revocation, not for a Family-circle model. Tinybeans/FamilyAlbum/Apple carry the multi-member argument. *(official — Google Photos Help)*
+
+### D. Durability is a first-order risk — authority: analysis
+- **SafeBeyond** (funded digital-legacy/time-capsule vendor, Tel Aviv, Munich Re partnership) **ceased ops ~July 2022** — funded "decades" vendors do fail. *(analysis — Dealroom)*
+- **GoodTrust** is **live in 2026** (~$149 then $39/yr; wills/directives + "digital executor" + last-message delivery + B2B insurer/bank distribution) — survives by pairing memory storage with executor handoff + recurring revenue. *(analysis — GoodTrust site + 2026 reviews)*
+- Implication: HTN needs an explicit export / open-format portability / company-failure survivability (escrow + inheritance handoff) story to honestly promise "decades."
