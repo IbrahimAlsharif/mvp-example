@@ -1,0 +1,188 @@
+// Human Timeline Network — data model.
+//
+// Load-bearing invariants encoded here:
+//  - PrivacyCircle has EXACTLY three values (US-3.1).
+//  - Event.circle and Event.legacyConsent are COLUMNS on the Event row, so they
+//    commit in the same single-row insert as the event — circle/consent can never
+//    be missing from a persisted event (US-3.1 AC-9, US-1.1 AC-7, guardrail G5).
+//  - Event.deletedAt / Media.deletedAt are nullable timestamps: deletes are soft
+//    and recoverable; nothing is hard-deleted by a system event (G2, US-1.1 AC-16).
+//  - Media.publicId is the only client-facing id (128-bit, non-guessable). The
+//    content-addressed storageKey is never exposed to clients (US-3.3 AC-1).
+//  - @@unique([eventId, checksumSha256]) on Media => exactly one blob per item
+//    even under resume/retry (US-1.2 AC-13).
+//  - Event.submitKey @unique => idempotent submit (US-1.1 AC-8).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PrivacyCircle {
+  ME_ONLY
+  FAMILY
+  PUBLIC_UNLISTED
+}
+
+enum AccountStatus {
+  UNCONFIRMED
+  ACTIVE
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+  VOICE
+}
+
+enum MediaStatus {
+  PENDING
+  PERSISTED
+  FAILED
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  token      String    @unique // >=128-bit, single-use (US-0.1 AC-1)
+  email      String? // optional email-pinned invite
+  expiresAt  DateTime
+  consumedAt DateTime? // single-use: set inside the account-create transaction
+  createdAt  DateTime  @default(now())
+  account    Account?
+
+  @@index([email])
+}
+
+model Account {
+  id            String        @id @default(cuid())
+  email         String        @unique // duplicate-account prevention (US-0.1 AC-6)
+  passwordHash  String? // null for social-only accounts
+  status        AccountStatus @default(UNCONFIRMED)
+  defaultCircle PrivacyCircle @default(ME_ONLY) // G1 / US-0.1 AC-8
+  invitationId  String?       @unique
+  invitation    Invitation?   @relation(fields: [invitationId], references: [id])
+  createdAt     DateTime      @default(now())
+
+  identities AuthIdentity[]
+  sessions   Session[]
+  events     Event[]
+  tokens     EmailToken[]
+}
+
+model AuthIdentity {
+  id          String       @id @default(cuid())
+  accountId   String
+  account     Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider    AuthProvider
+  providerSub String // provider subject / verified email
+  createdAt   DateTime     @default(now())
+
+  @@unique([provider, providerSub])
+  @@index([accountId])
+}
+
+model EmailToken {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  token     String   @unique // >=128-bit, non-guessable
+  purpose   String // "confirm" | "reset"
+  expiresAt DateTime
+  usedAt    DateTime? // single-use (US-0.1 AC-2, AC-7)
+  createdAt DateTime @default(now())
+
+  @@index([accountId])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // store the HASH of the cookie token, never the raw token
+  expiresAt DateTime
+  revokedAt DateTime? // server-side sign-out invalidation (US-0.1 AC-9)
+  createdAt DateTime  @default(now())
+
+  @@index([accountId])
+}
+
+model Event {
+  id            String        @id @default(cuid())
+  accountId     String
+  account       Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  note          String? // text note; note-only event is valid
+  occurredOn    DateTime // canonical absolute Gregorian date (US-1.1 AC-5)
+  locationLat   Float?
+  locationLng   Float?
+  circle        PrivacyCircle @default(ME_ONLY) // ATOMIC with event (US-3.1 AC-9)
+  legacyConsent Boolean       @default(false) // ATOMIC consent flag (US-4.1 / G5)
+  submitKey     String        @unique // idempotent submit (US-1.1 AC-8)
+  version       Int           @default(1) // versioning seam (US-1.1 AC-16)
+  deletedAt     DateTime? // soft-delete / recoverable (G2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  media      Media[]
+  shareLinks ShareLink[]
+
+  @@index([accountId, occurredOn])
+  @@index([accountId, deletedAt])
+}
+
+model Media {
+  id             String      @id @default(cuid())
+  publicId       String      @unique // >=128-bit non-guessable; ONLY client-facing id (US-3.3 AC-1)
+  eventId        String?
+  event          Event?      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  accountId      String // owner, for authz before an event is attached
+  type           MediaType
+  mimeType       String // validated against allowlist (US-1.2 AC-7)
+  storageKey     String // content-addressed: "sha256/<hash>"; NEVER exposed to clients
+  checksumSha256 String // client-supplied, server-verified at complete (US-1.2 AC-4)
+  byteSize       Int?
+  status         MediaStatus @default(PENDING) // confirm only on PERSISTED (US-1.2 AC-4)
+  deletedAt      DateTime? // soft-delete (G2)
+  createdAt      DateTime    @default(now())
+
+  @@unique([eventId, checksumSha256]) // exactly one blob per item per event (US-1.2 AC-13)
+  @@index([accountId])
+  @@index([status])
+}
+
+model UploadSession {
+  id             String    @id @default(cuid())
+  accountId      String
+  uploadKey      String    @unique // client idempotency key (US-1.2 AC-13)
+  storageKey     String // target content-addressed key
+  s3UploadId     String? // S3/MinIO multipart UploadId
+  checksumSha256 String
+  mimeType       String
+  byteSize       Int?
+  lastActivityAt DateTime  @default(now()) // reaper anchor (US-1.2 AC-14)
+  completedAt    DateTime? // never reap a completed session (G2)
+  createdAt      DateTime  @default(now())
+
+  @@index([completedAt, lastActivityAt])
+  @@index([accountId])
+}
+
+model ShareLink {
+  id        String    @id @default(cuid())
+  eventId   String
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  token     String    @unique // >=128-bit non-guessable, non-discoverable (US-3.3 AC-5)
+  expiresAt DateTime // bounded; default applied if owner sets none (US-3.3 AC-7)
+  revokedAt DateTime? // revocation (US-3.3 AC-6)
+  createdAt DateTime  @default(now())
+
+  @@index([eventId])
+}
