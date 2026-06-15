@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>J2 — Capture a life event · Deep UX Report</title>
+<style>
+  :root{--bg:#0f172a;--panel:#16203a;--panel2:#1e2b4d;--ink:#e8edf7;--muted:#9fb0d0;--gold:#b8961e;--blocking:#dc2626;--risk:#d97706;--advisory:#475b86;--ok:#16a34a;--line:#28365c;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,Segoe UI,Tahoma,Arial,sans-serif;line-height:1.6;font-size:15px}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 22px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:19px;margin:34px 0 12px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:6px}
+  h3{font-size:15px;margin:18px 0 6px}
+  .sub{color:var(--muted);font-size:13.5px}
+  .verdict{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0}
+  .pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700}
+  .v-friction{background:#7a5b12;color:#fff}
+  .p-blocking{background:var(--blocking);color:#fff}.p-risk{background:var(--risk);color:#fff}.p-advisory{background:var(--advisory);color:#fff}.p-ok{background:var(--ok);color:#fff}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px}
+  th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--gold);font-weight:700}
+  code{background:#0b1326;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#cdd9f5}
+  .meta{color:var(--muted);font-size:13px}
+  .hi{background:linear-gradient(90deg,#3a2c08,#16203a);border-left:4px solid var(--gold);padding:12px 16px;border-radius:0 10px 10px 0;margin:10px 0}
+  .pos li{margin:3px 0}
+  .finding{border-left:4px solid var(--risk);background:var(--panel2);padding:10px 14px;border-radius:0 10px 10px 0;margin:10px 0}
+  .finding.adv{border-left-color:var(--advisory)}
+  .finding b{color:#fff}
+  .score{font-size:22px;font-weight:800;color:var(--gold)}
+  img{max-width:100%;border:1px solid var(--line);border-radius:10px;margin:6px 0}
+  .shot-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:720px){.shot-row{grid-template-columns:1fr}}
+  .tag{font-size:11px;color:var(--muted);display:block;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>J2 — التقاط حدث في الحياة · تقييم تجربة عميق (journey-ux)</h1>
+  <div class="sub">Quick-add path · web · persona: Parents / Family Archivists (Elderly most-at-risk) · run 2026-06-15T06:45Z · FEAT-IOV</div>
+
+  <div class="verdict">
+    <span class="pill v-friction">VERDICT: USABLE WITH FRICTION</span>
+    <span class="pill p-advisory">AI-slop: shows tells (advisory)</span>
+    <span class="pill p-ok">Cognitive load: LOW (in-dialog)</span>
+    <span class="pill p-risk">WCAG AA: FAIL (2.1.1, dialog pattern)</span>
+  </div>
+
+  <div class="hi">
+    <b>Single highest-impact fix:</b> Make quick-add a centered, scrollable bottom-sheet/modal on ≤480px (fixes the off-viewport Save, F4) <b>and</b> bring it to the EventModal dialog standard — autofocus, focus-trap, ESC/scrim close, <code>aria-modal</code> (fixes F6, helps the keyboard gap F2). That lifts the core capture from desktop-only, mouse-only friction toward STRONG UX on every device.
+  </div>
+
+  <div class="card meta">
+    <b>Journey folder:</b> <code>.sara/journeys/j2-capture-event/</code> · <b>Run:</b> <code>runs/ux/web/20260615T064500Z/</code><br/>
+    <b>Locator map:</b> verified (no heals needed) · <b>Account:</b> ux.j2.0615@example.com · <b>Coverage:</b> desktop-1280, 390px, ar-RTL (default)<br/>
+    <b>Contract:</b> J2 is already business <span class="pill p-ok" style="font-size:11px">VALUE DELIVERED</span>; this UX run does not flip that — desktop completes end-to-end.
+  </div>
+
+  <h2>Per-step UX read (project persona)</h2>
+  <table>
+    <tr><th>#</th><th>Step</th><th>Read</th></tr>
+    <tr><td>0</td><td>Reach quick-add from an <b>empty</b> timeline</td><td><span class="pill p-risk" style="font-size:11px">DEAD-END</span> The rail isn't rendered when there are 0 events; the placeholder says "press the timeline" but nothing is clickable (verified no-op). User is silently forced to the <code>/events/new</code> form. <b>(F1)</b></td></tr>
+    <tr><td>1</td><td>Click an empty rail point</td><td><span class="pill p-ok" style="font-size:11px">STRONG</span> Live <b>HoverReadout</b> shows the exact weekday-date-time under the cursor + "press to add here"; popup opens pre-filled with the date in words (contrast 14.6).</td></tr>
+    <tr><td>2</td><td>Write note + place</td><td>Clear inputs; Save gated on content; place stored structured (placeName). <b>But all dialog type is 11–12px</b> — below the 14px floor. <b>(F5)</b></td></tr>
+    <tr><td>3</td><td>Choose circle</td><td><span class="pill p-ok" style="font-size:11px">BEST</span> Native radios + sub-labels, Me-Only default, live <code>role=status</code> "مستوى الخصوصية المحدد: العائلة". Save-on-gradient contrast 5.2–5.7 (AA pass).</td></tr>
+    <tr><td>4</td><td>Save → confirmation</td><td><span class="pill p-ok" style="font-size:11px">VALUE DELIVERED</span> Save → EventModal opens (author/date/circle/note/📍 place) + success status + node on rail. EventModal is a correct dialog. <b>But</b> the relative line reads "· اليوم/today" on a future date. <b>(F3)</b></td></tr>
+  </table>
+
+  <h2>Findings</h2>
+
+  <div class="finding"><b>F1 · risk</b> — floor <code>fake_affordance</code>/<code>dead_navigation</code> + cog-walkthrough Q2. On an <b>empty</b> timeline the quick-add rail is not rendered (<code>CosmicCommandCenter.tsx:155</code>); the placeholder instructs "press the timeline" but nothing is clickable. J2's own primary entry is a first-use dead-end. <b>Fix:</b> render the rail when empty, or make the placeholder itself open quick-add.</div>
+
+  <div class="finding"><b>F2 · risk</b> — WCAG 2.1.1 Keyboard / 4.1.2. The rail is a <code>div</code> with only mouse handlers (<code>role=null, tabindex=null</code>, <code>CosmicTimeline.tsx:282</code>). The whole quick-add entry is <b>mouse-only</b> — keyboard/SR users cannot open it. <b>Fix:</b> a focusable rail with a key-to-add, or a visible "add at date" control.</div>
+
+  <div class="finding"><b>F3 · risk</b> — Heuristic 9 / confirmation correctness. Future-dated events are labelled "اليوم/today": <code>relativeHint</code> maps <code>days &lt;= 0 → today</code> (<code>EventCard.tsx:32</code>, <code>date.ts:13</code>). Misreports the date the user just chose on the load-bearing position↔date mapping. <b>Fix:</b> handle <code>days &lt; 0</code> distinctly; never call a future date "today".</div>
+
+  <div class="finding"><b>F4 · risk (re-test for blocking) — HIGHEST IMPACT</b> — floor <code>occluded_or_offscreen_control</code> (390px). The absolutely-positioned 588px-tall popup lands at y≈511, so <b>Save sits at y≈1052–1085, below the 844px viewport, and the page does not scroll to it</b> (<code>scrollHeight===844</code>, <code>scrollTo</code> is a no-op). Reachable only via an inner scroll/zoom → recorded risk, not a hard block. <b>Fix:</b> centered scrollable bottom-sheet on ≤480px.</div>
+
+  <div class="finding"><b>F5 · risk</b> — Method 4 legibility (craft threshold). Dialog type is systematically &lt;14px: note 12px; time/place/labels/Save label 11px (<code>QuickAddPopup.tsx:169,185,204,216,282</code>); Save is 33px tall (&lt;44px). Worst for the elderly variant. <b>Fix:</b> ≥14px body, ≥44px Save.</div>
+
+  <div class="finding"><b>F6 · risk</b> — WCAG 2.1.2/2.4.3/4.1.2 + Heuristic 3/4. QuickAddPopup <code>role=dialog</code> has <b>no aria-modal, no initial focus (stays on BODY), no focus trap, and ESC does not close it</b> (verified). Its sibling <b>EventModal does all of this correctly</b> → an internal inconsistency. <b>Fix:</b> match the EventModal dialog standard.</div>
+
+  <div class="finding"><b>F7 · risk</b> — floor <code>container_overflow</code> (390px). Rail renders 443px wide in a 390px viewport (clipped ~82px); the compressed 256px rail makes taps imprecise (a test tap for empty space opened an existing node instead). Header <b>export + sign-out render off-screen</b> (same class as J1 F3). <b>Fix:</b> constrain/scroll the rail; menu the header at ≤480px.</div>
+
+  <div class="finding adv"><b>F8 · advisory</b> — RTL convention / Heuristic 2. Axis runs <b>past-left → future-right</b> and headers agree (future on the right) — internally consistent, but inverts the RTL reading-order expectation. <code>journey.md</code>'s "past=right" is stale. <b>Advisory:</b> confirm intended direction with design; the good HoverReadout disambiguates either way. Not a code bug.</div>
+
+  <div class="finding adv"><b>F9 · advisory</b> — Method 5 <code>gradient_text</code>/<code>ai_color_palette</code> tell. Save button gradient fill + gradient brand wordmark (from J1 F10). Passes contrast; identity tell only. <b>Fix:</b> solid brand color.</div>
+
+  <h2>Scores</h2>
+  <div class="grid">
+    <div class="card"><h3>Nielsen heuristics</h3><div class="score">27 / 40</div><div class="meta">healthy band 20–32. Weakest: #2 match-real-world (F3, F8), #3/#4 control &amp; consistency (F6 vs EventModal), #7 efficiency on mobile (F4).</div></div>
+    <div class="card"><h3>WCAG AA</h3><div class="score" style="color:var(--risk)">FAIL</div><div class="meta">2.1.1 Keyboard (F2 rail mouse-only) + dialog pattern 2.1.2/2.4.3/4.1.2 (F6). Contrast PASS (date 14.6, Save 5.2–5.7). Native radios + labels PASS.</div></div>
+    <div class="card"><h3>Cognitive walkthrough</h3><div class="meta">Steps 1–4 pass all four questions on desktop once the rail exists; <b>step 0 fails Q2</b> on an empty timeline (F1).</div></div>
+    <div class="card"><h3>Cognitive load</h3><div class="score" style="color:var(--ok)">LOW</div><div class="meta">In-dialog: few real decisions (note → circle → save); 11 controls but well-grouped/optional. HoverReadout supports the "pick a time" intrinsic load.</div></div>
+    <div class="card"><h3>AI-slop test</h3><div class="meta">Shows tells — gradient Save + gradient wordmark (F9). Otherwise the cosmic aesthetic is distinctive, not reflex-SaaS. Identity advisory only.</div></div>
+    <div class="card"><h3>Multi-persona stress</h3><div class="meta"><b>Mobile:</b> F4+F7 (core capture much harder on phone). <b>Stress-tester:</b> F3, F1, ESC no-op (F6). <b>First-timer:</b> F1, F8. <b>A11y:</b> F2+F6 (quick-add unavailable to keyboard/SR).</div></div>
+  </div>
+
+  <h2>Positives (kept honest)</h2>
+  <ul class="pos">
+    <li><b>HoverReadout</b> — exact weekday-date-time under the cursor + "press to add here"; de-risks the UJM's load-bearing position↔date mapping.</li>
+    <li>Privacy is exemplary: native radios + sub-labels, <b>Me-Only default</b>, live <code>role=status</code> announcing the chosen circle.</li>
+    <li>Save gated on content; non-optimistic create; explicit success status; the confirming <b>EventModal is a correct, keyboard-operable, ESC-closable, aria-modal dialog</b>.</li>
+    <li>RTL native and clean in the popup (no Latin leak, no RTL-only overlap on the desktop critical path).</li>
+  </ul>
+
+  <h2>Viewport / locale coverage</h2>
+  <table>
+    <tr><th>Surface</th><th>desktop-1280</th><th>390px</th><th>ar-RTL</th></tr>
+    <tr><td>Empty-timeline entry</td><td>F1 dead-end</td><td>F1 dead-end</td><td>checked</td></tr>
+    <tr><td>Rail click → popup</td><td>OK (HoverReadout)</td><td>F7 clipped/imprecise</td><td>F8 axis dir</td></tr>
+    <tr><td>Quick-add dialog</td><td>F5 type, F6 dialog</td><td>F4 Save off-viewport</td><td>OK (dir=rtl)</td></tr>
+    <tr><td>Save → confirm</td><td>OK + F3 "today"</td><td>—</td><td>OK</td></tr>
+  </table>
+
+  <h2>Evidence</h2>
+  <div class="shot-row">
+    <div><span class="tag">Desktop — timeline rail (HoverReadout context)</span><img src="../.sara/journeys/j2-capture-event/runs/ux/web/20260615T064500Z/j2-s0-timeline-with-rail-desktop.png" alt="timeline rail desktop"/></div>
+    <div><span class="tag">Desktop — quick-add popup open</span><img src="../.sara/journeys/j2-capture-event/runs/ux/web/20260615T064500Z/j2-s1-quickadd-open-desktop.png" alt="quick-add open desktop"/></div>
+    <div><span class="tag">Desktop — EventModal confirmation (note "اليوم" on future date)</span><img src="../.sara/journeys/j2-capture-event/runs/ux/web/20260615T064500Z/j2-s4-detail-after-save-desktop.png" alt="detail after save"/></div>
+    <div><span class="tag">390px — clipped rail + off-screen header controls</span><img src="../.sara/journeys/j2-capture-event/runs/ux/web/20260615T064500Z/j2-s5-timeline-390px.png" alt="timeline 390px"/></div>
+    <div style="grid-column:1/-1"><span class="tag">390px — quick-add Save button below a non-scrolling viewport (F4)</span><img src="../.sara/journeys/j2-capture-event/runs/ux/web/20260615T064500Z/j2-s6-quickadd-390px-save-offscreen.png" alt="save offscreen 390px"/></div>
+  </div>
+
+  <h2>Filing &amp; follow-ups</h2>
+  <div class="card meta">
+    Per "list then fix", findings are <b>not auto-filed</b> this run. F1–F7 are filing candidates via <code>bug-report</code> (risk → major/minor); F8–F9 are advisories. F4 should be re-tested on a real device to confirm whether it is blocking (a J2 completion failure owned by journey-test).<br/><br/>
+    <b>Doc-drift:</b> update <code>j2-capture-event/journey.md</code> — place is now a structured <code>placeName</code> column (not note-folded), and the RTL axis runs future-right. Re-run journey-ux after the bottom-sheet + dialog-standardization rework.
+  </div>
+
+  <div class="meta" style="margin-top:30px;border-top:1px solid var(--line);padding-top:14px">Generated by Sara · journey-ux · evidence depth: live web walk (Playwright locators + DOM geometry/computed styles), desktop + 390px + RTL. Mobile contrast/keyboard observable on web — checked. No method marked partial.</div>
+
+</div>
+</body>
+</html>

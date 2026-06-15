@@ -13,6 +13,8 @@ export type EventVM = {
   media: { publicId: string }[];
   lat: number | null;
   lng: number | null;
+  /** Structured free-text place (J2.4); null/absent when the event has no named place. */
+  placeName?: string | null;
   /** True when the viewing account owns this event (may change its circle). */
   isOwn?: boolean;
 };

@@ -10,6 +10,7 @@ import {
   ImagePlus,
   Sparkles,
   CalendarDays,
+  MapPin,
   X,
   Image as ImageIcon,
   Film,
@@ -60,6 +61,8 @@ function NewEventInner() {
   // user must confirm or clear before it sticks (AC-10 / US-2.2 AC-3).
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationSuggested, setLocationSuggested] = useState(false);
+  // Structured free-text place name (J2.4) — its own field, not folded into the note.
+  const [placeName, setPlaceName] = useState("");
   const [dateFromPhoto, setDateFromPhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +175,7 @@ function NewEventInner() {
         legacyConsent,
         mediaPublicIds: persistedIds,
         location, // auto-extracted from photo EXIF, or null
+        placeName: placeName.trim() || null,
         submitKey: newUploadKey(),
       }),
     });
@@ -385,6 +389,24 @@ function NewEventInner() {
               setLocationSuggested(false);
             }}
           />
+        </section>
+
+        {/* Structured place name (J2.4) — its own field, stored separately from
+            the note and the GPS coordinates. */}
+        <section>
+          <label className="flex items-center gap-2 rounded-2xl border border-white/60 bg-white/40 px-3 py-2.5">
+            <MapPin className="h-4 w-4 shrink-0 text-neutral-500" aria-hidden />
+            <input
+              type="text"
+              value={placeName}
+              maxLength={200}
+              onChange={(e) => setPlaceName(e.target.value)}
+              data-testid="place-input"
+              aria-label={t("placeLabel")}
+              placeholder={t("placePlaceholder")}
+              className="w-full bg-transparent text-sm text-neutral-800 outline-none placeholder:text-neutral-400"
+            />
+          </label>
         </section>
 
         {/* Privacy */}

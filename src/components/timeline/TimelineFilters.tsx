@@ -8,6 +8,7 @@ const CIRCLES: { value: PrivacyCircle; icon: string; label: string }[] = [
   { value: "ME_ONLY", icon: "🔒", label: "أنا فقط" },
   { value: "FAMILY", icon: "👪", label: "العائلة" },
   { value: "PUBLIC_UNLISTED", icon: "🔗", label: "رابط خاص" },
+  { value: "PUBLIC", icon: "🌍", label: "عام" },
 ];
 
 export type View = "timeline" | "map";

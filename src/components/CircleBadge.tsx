@@ -1,11 +1,13 @@
 import type { PrivacyCircle } from "@prisma/client";
 
 // Small colored pill that signals an event's privacy circle at a glance.
-// ME_ONLY = neutral, FAMILY = brand blue, PUBLIC_UNLISTED = accent orange.
+// ME_ONLY = neutral, FAMILY = brand blue, PUBLIC_UNLISTED = accent orange,
+// PUBLIC = green (widest reach, distinct from the link-only orange).
 const STYLES: Record<PrivacyCircle, { cls: string; icon: string; label: string }> = {
   ME_ONLY: { cls: "bg-neutral-100 text-neutral-600", icon: "🔒", label: "أنا فقط" },
   FAMILY: { cls: "bg-brand-50 text-brand-700", icon: "👪", label: "العائلة" },
   PUBLIC_UNLISTED: { cls: "bg-accent-50 text-accent-700", icon: "🔗", label: "رابط خاص" },
+  PUBLIC: { cls: "bg-emerald-50 text-emerald-700", icon: "🌍", label: "عام" },
 };
 
 export function CircleBadge({ circle }: { circle: PrivacyCircle }) {

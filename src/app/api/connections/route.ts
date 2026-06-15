@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import {
   requestConnection,
   pendingIncoming,
+  pendingOutgoing,
   acceptedMembers,
   SelfConnectionError,
 } from "@/lib/connections";
@@ -62,17 +63,48 @@ export async function GET() {
     throw e;
   }
 
-  const [pending, members] = await Promise.all([
+  const [pending, sent, members] = await Promise.all([
     pendingIncoming(account.id),
+    pendingOutgoing(account.id),
     acceptedMembers(account.id),
   ]);
 
   const other = (c: { accountAId: string; accountBId: string }) =>
     c.accountAId === account.id ? c.accountBId : c.accountAId;
 
+  // Resolve counterpart emails so each row can show WHO it is (US-3.5 — the
+  // inviter/accepter should know whom they are granting Family access to), not
+  // just the tier. One batched lookup over the union of counterpart ids.
+  const counterpartIds = Array.from(
+    new Set([...pending.map(other), ...sent.map(other), ...members.map(other)]),
+  );
+  const accounts = counterpartIds.length
+    ? await prisma.account.findMany({
+        where: { id: { in: counterpartIds } },
+        select: { id: true, email: true },
+      })
+    : [];
+  const emailOf = new Map(accounts.map((a) => [a.id, a.email]));
+
   return NextResponse.json({
     ok: true,
-    pending: pending.map((c) => ({ id: c.id, tier: c.tier, fromAccountId: c.requestedById })),
-    members: members.map((c) => ({ id: c.id, tier: c.tier, memberAccountId: other(c) })),
+    pending: pending.map((c) => ({
+      id: c.id,
+      tier: c.tier,
+      fromAccountId: c.requestedById,
+      fromEmail: emailOf.get(other(c)) ?? null,
+    })),
+    sent: sent.map((c) => ({
+      id: c.id,
+      tier: c.tier,
+      status: c.status, // PENDING — a declined edge is deleted, so absence = declined/withdrawn
+      toEmail: emailOf.get(other(c)) ?? null,
+    })),
+    members: members.map((c) => ({
+      id: c.id,
+      tier: c.tier,
+      memberAccountId: other(c),
+      memberEmail: emailOf.get(other(c)) ?? null,
+    })),
   });
 }

@@ -29,7 +29,10 @@ export function EventCard({
   // enough that the absolute date carries on its own).
   function relativeHint(value: string | Date): string | null {
     const days = daysAgo(value);
-    if (days <= 0) return t("today");
+    // A future-dated memory (the rail spans the future side) must never read
+    // "today" — that misreports the date the user picked. Label it explicitly.
+    if (days < 0) return t("future");
+    if (days === 0) return t("today");
     if (days === 1) return t("yesterday");
     if (days < 7) return t("daysAgo", { n: days });
     return null;
@@ -64,6 +67,17 @@ export function EventCard({
       {event.note && (
         <p className="whitespace-pre-wrap px-4 pt-3 leading-relaxed text-neutral-800">
           {event.note}
+        </p>
+      )}
+
+      {/* structured place (J2.4) — its own labelled row, not folded into the note */}
+      {event.placeName && (
+        <p
+          data-testid="event-place"
+          className="mt-2 inline-flex max-w-full items-center gap-1 px-4 text-sm text-neutral-500"
+        >
+          <span aria-hidden>📍</span>
+          <span className="truncate">{event.placeName}</span>
         </p>
       )}
 

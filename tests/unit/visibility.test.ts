@@ -9,12 +9,26 @@ const STRANGER = "acc_stranger";
 /**
  * The load-bearing J3/J9 visibility invariant, tested at the query-clause level
  * (no DB): a FAMILY connection sees FAMILY+PUBLIC_UNLISTED, a GENERAL connection
- * sees PUBLIC_UNLISTED only, ME_ONLY is never shared, strangers see nothing.
+ * sees PUBLIC_UNLISTED only, ME_ONLY is never shared, and any author's PUBLIC is
+ * visible to every authenticated viewer (the only connection-free cross-account
+ * branch). Strangers see only their own events + any author's PUBLIC.
  */
 describe("visibilityClauses (graph-backed timeline read path)", () => {
-  it("always includes the viewer's own events (every circle)", () => {
+  it("always includes the viewer's own events plus the unconditional PUBLIC branch", () => {
     const or = visibilityClauses(ME, new Set(), new Set());
-    expect(or).toEqual([{ accountId: ME }]);
+    expect(or).toContainEqual({ accountId: ME });
+    // PUBLIC is visible to any authenticated viewer regardless of connection,
+    // so it is always present as an account-unconstrained, circle-scoped branch.
+    expect(or).toContainEqual({ circle: "PUBLIC" });
+  });
+
+  it("the PUBLIC branch has NO accountId filter (any author) but IS circle-scoped to PUBLIC only", () => {
+    const or = visibilityClauses(ME, new Set([FAM]), new Set([GEN]));
+    const pub = or.filter((c) => (c as any).circle === "PUBLIC");
+    expect(pub).toHaveLength(1);
+    expect((pub[0] as any).accountId).toBeUndefined(); // any author
+    // and it never widens to other circles
+    expect(Object.keys(pub[0] as object)).toEqual(["circle"]);
   });
 
   it("a FAMILY connection adds that author's FAMILY events and PUBLIC_UNLISTED events", () => {
@@ -40,10 +54,13 @@ describe("visibilityClauses (graph-backed timeline read path)", () => {
     expect(leaks).toEqual([]);
   });
 
-  it("a stranger (no connection) contributes no branch — only own events remain", () => {
+  it("a stranger (no connection) contributes no per-author branch — only own events + global PUBLIC remain", () => {
     const or = visibilityClauses(ME, new Set(), new Set());
     expect(or.some((c) => JSON.stringify(c).includes(STRANGER))).toBe(false);
-    expect(or).toHaveLength(1);
+    // own-events branch + the unconditional PUBLIC branch, nothing else
+    expect(or).toHaveLength(2);
+    expect(or).toContainEqual({ accountId: ME });
+    expect(or).toContainEqual({ circle: "PUBLIC" });
   });
 
   it("an account that is BOTH family and general (shouldn't happen, but) still never gets FAMILY via general only", () => {

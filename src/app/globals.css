@@ -219,87 +219,99 @@ body {
   }
 }
 
-/* ── Cosmic theme (scoped) ───────────────────────────────────────────────────
-   The timeline "command center" is the only dark surface in the app. Everything
-   here is scoped under .timeline-cosmic so the light identity on every other
-   page is untouched. Provides: a deep nebula canvas, a faint animated starfield,
-   frosted dark panels, and reusable neon-node + glow primitives. All motion is
-   disabled by the global prefers-reduced-motion guard at the end of this file. */
+/* ── Timeline command-center theme (scoped) ──────────────────────────────────
+   The timeline "command center" now wears the SAME light, joyful identity as the
+   rest of the app (glass + aurora + brand gradients), matching the create-event
+   wizard. Everything is scoped under .timeline-cosmic; the `cosmic-*` tokens are
+   redefined to light values in tailwind.config.ts, so the whole tree flips by
+   value. Provides: a light aurora canvas, frosted WHITE glass panels, and
+   reusable soft-glow node + glow primitives. Motion is disabled by the global
+   prefers-reduced-motion guard at the end of this file. */
 .timeline-cosmic {
   position: relative;
   isolation: isolate;
   background: theme("backgroundImage.cosmic-canvas");
-  background-color: #070b1a;
+  background-color: #f8fafc;
   color: theme("colors.cosmic.ink");
   min-height: 100vh;
 }
-/* Faint starfield: two layered radial-dot patterns that slowly twinkle/drift. */
+/* Ambient aurora orbs (brand blue + accent orange) drifting behind the glass —
+   the same "alive" light background the create-event page uses. */
 .timeline-cosmic::before,
 .timeline-cosmic::after {
   content: "";
   position: absolute;
-  inset: 0;
   z-index: -1;
   pointer-events: none;
-}
-.timeline-cosmic::before {
-  background-image:
-    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1.5px 1.5px at 75% 15%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 50% 60%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 90% 70%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 35% 85%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1px 1px at 10% 65%, rgba(255, 255, 255, 0.45), transparent);
-  background-repeat: repeat;
-  background-size: 420px 420px;
+  width: 40rem;
+  height: 40rem;
+  border-radius: 9999px;
+  filter: blur(96px);
   opacity: 0.5;
 }
+.timeline-cosmic::before {
+  background: radial-gradient(circle, #4f46e5 0%, transparent 70%);
+  top: -12rem;
+  inset-inline-end: -8rem;
+}
 .timeline-cosmic::after {
-  /* Soft nebula bloom layered over the stars. */
-  background:
-    radial-gradient(40rem 28rem at 78% 8%, rgba(56, 189, 248, 0.10), transparent 70%),
-    radial-gradient(38rem 26rem at 6% 96%, rgba(168, 85, 247, 0.12), transparent 70%);
+  background: radial-gradient(circle, #f97316 0%, transparent 70%);
+  bottom: -14rem;
+  inset-inline-start: -8rem;
 }
 @media (prefers-reduced-motion: no-preference) {
   .timeline-cosmic::before {
-    animation: twinkle 6s ease-in-out infinite;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .timeline-cosmic::after {
+    animation: drift 24s ease-in-out infinite alternate-reverse;
   }
 }
 
-/* Frosted dark panel — the left/right command-center columns + center card. */
+/* Frosted WHITE glass panel — the command-center columns + center card. Mirrors
+   the `.glass` surface used by the create-event wizard. */
 .cosmic-panel {
-  background: rgba(14, 20, 48, 0.6);
-  border: 1px solid theme("colors.cosmic.border");
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 1.25rem;
   box-shadow: theme("boxShadow.cosmic-panel");
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .cosmic-panel {
-    background: rgba(14, 20, 48, 0.45);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
-    backdrop-filter: blur(14px) saturate(130%);
+    background: rgba(255, 255, 255, 0.5);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
   }
 }
 .cosmic-inset {
-  background: rgba(20, 27, 61, 0.55);
-  border: 1px solid theme("colors.cosmic.border");
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(219, 232, 254, 0.9);
   border-radius: 1rem;
 }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cosmic-inset {
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
 
-/* Neon event node — a glowing dot/icon on the timeline track. Accent color is
-   set per-instance via the --glow custom property (defaults to cosmic blue). */
+/* Event node — a soft-glowing icon chip on the timeline track. Accent color is
+   set per-instance via the --glow custom property (defaults to brand blue). On
+   the light surface the chip is a tinted fill with a colored ring + drop shadow,
+   not a dark-mode neon bloom. */
 .cosmic-node {
-  --glow: 56, 189, 248;
+  --glow: 37, 99, 235;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(var(--glow), 0.16);
-  border: 1px solid rgba(var(--glow), 0.5);
+  background: rgba(var(--glow), 0.12);
+  border: 1px solid rgba(var(--glow), 0.45);
   color: rgb(var(--glow));
   box-shadow:
-    0 0 0 1px rgba(var(--glow), 0.25),
-    0 0 18px -2px rgba(var(--glow), 0.6);
+    0 0 0 1px rgba(var(--glow), 0.12),
+    0 8px 20px -8px rgba(var(--glow), 0.55);
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease;
@@ -307,9 +319,10 @@ body {
 .cosmic-node:hover,
 .cosmic-node[data-selected="true"] {
   transform: translateY(-2px) scale(1.06);
+  background: rgba(var(--glow), 0.18);
   box-shadow:
-    0 0 0 1px rgba(var(--glow), 0.5),
-    0 0 26px 0 rgba(var(--glow), 0.7);
+    0 0 0 1px rgba(var(--glow), 0.4),
+    0 12px 26px -8px rgba(var(--glow), 0.7);
 }
 
 /* Live-pulse ring — used behind the profile avatar ("النبض الحي"). */
@@ -317,7 +330,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 2px solid rgba(45, 212, 191, 0.7);
+  border: 2px solid rgba(13, 148, 136, 0.6);
 }
 @media (prefers-reduced-motion: no-preference) {
   .pulse-ring {

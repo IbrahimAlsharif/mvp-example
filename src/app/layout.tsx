@@ -14,8 +14,9 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "الخط الزمني للحياة",
-  description: "احفظ ذكرياتك، وتنقّل في حياتك، وشاركها بثقة.",
+  title: "حكاية",
+  description: "احفظ حكايتك، ورّثها لمن تحب.",
+  icons: { icon: "/icon.svg" },
 };
 
 // Arabic-first, full RTL at the document root (guardrail G6).

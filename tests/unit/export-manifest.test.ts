@@ -18,7 +18,7 @@ function media(checksum: string, mimeType = "image/jpeg") {
 }
 function event(id: string, media_: ReturnType<typeof media>[]): ExportedEvent {
   return {
-    id, note: null, occurredOn: "2026-01-01T12:00:00.000Z", location: null,
+    id, note: null, occurredOn: "2026-01-01T12:00:00.000Z", location: null, placeName: null,
     circle: "ME_ONLY", legacyConsent: false, legacyConsentValue: "UNSET", legacyConsentAt: null,
     version: 1, createdAt: "2026-01-01T12:00:00.000Z",
     media: media_,
@@ -27,7 +27,7 @@ function event(id: string, media_: ReturnType<typeof media>[]): ExportedEvent {
 function exp(events: ExportedEvent[]): AccountExport {
   const checksums = events.flatMap((e) => e.media.map((m) => m.checksumSha256)).sort();
   return {
-    format: "human-timeline-network/export", formatVersion: 1, exportedAt: "2026-06-15T00:00:00.000Z",
+    format: "human-timeline-network/export", formatVersion: 2, exportedAt: "2026-06-15T00:00:00.000Z",
     account: { id: "a", email: "a@b.c", defaultCircle: "ME_ONLY", createdAt: "2026-01-01T00:00:00.000Z" },
     eventCount: events.length,
     manifest: {
@@ -60,6 +60,20 @@ describe("US-1.4 export integrity manifest (AC-4)", () => {
     const e = exp([event("e1", [media("aaa")])]);
     e.eventCount = 5; // lie about the count
     expect(verifyExportIntegrity(e)).toContain("declared_event_count_mismatch");
+  });
+});
+
+describe("J2.4 structured place in export (v2)", () => {
+  it("exports as formatVersion 2 and carries placeName as its own field", () => {
+    const e = exp([event("e1", [])]);
+    expect(e.formatVersion).toBe(2);
+    // placeName is its own field on the event, separate from the note text.
+    e.events[0].placeName = "حديقة الحي";
+    e.events[0].note = "نزهة";
+    expect(e.events[0].placeName).toBe("حديقة الحي");
+    expect(e.events[0].note).not.toContain("📍"); // not folded into the note
+    // adding a place doesn't disturb integrity (manifest is media-based)
+    expect(verifyExportIntegrity(e)).toEqual([]);
   });
 });
 

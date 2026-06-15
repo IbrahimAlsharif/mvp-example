@@ -37,10 +37,11 @@ export type ViewerLocation =
  * The location an event should expose to a given viewer.
  *
  *  - owner / authenticated Family member viewing a non-shared circle → exact.
- *  - any viewer reaching the event via a share link (PUBLIC_UNLISTED) → coarse,
- *    no finer than city/region. This is the conservative default and is applied
- *    server-side, so a stale read or CDN edge can never re-expose exact coords
- *    (AC-11): the exact coordinates simply never leave the server on this path.
+ *  - any viewer reaching the event via a share link (PUBLIC_UNLISTED) OR as a
+ *    non-family viewer of a PUBLIC event → coarse, no finer than city/region.
+ *    This is the conservative default and is applied server-side, so a stale read
+ *    or CDN edge can never re-expose exact coords (AC-11): the exact coordinates
+ *    simply never leave the server on these paths.
  *  - no recorded location → omitted.
  *
  * `omitLocation` lets the owner opt an event's shared location out entirely
@@ -50,17 +51,19 @@ export function locationForViewer(input: {
   lat: number | null;
   lng: number | null;
   circle: PrivacyCircle;
-  via: "owner" | "family_member" | "share_link";
+  via: "owner" | "family_member" | "public" | "share_link";
   omitLocation?: boolean;
 }): ViewerLocation {
   if (input.lat == null || input.lng == null) {
     return { lat: null, lng: null, precision: "omitted" };
   }
-  // The reduction targets shared-LINK exposure: an anonymous viewer reaching the
-  // event through a PUBLIC_UNLISTED share token. The owner and authenticated
-  // Family members see the full-precision record (AC-7) — Family is a
-  // non-shared circle granted by relationship, not a public link.
-  if (input.via !== "share_link") {
+  // The reduction targets exposure beyond the owner+family roster: an anonymous
+  // viewer reaching the event through a PUBLIC_UNLISTED share token, OR any
+  // non-family authenticated viewer of a PUBLIC event. The owner and
+  // authenticated Family members see the full-precision record (AC-7) — Family
+  // is a relationship-granted circle, not public exposure.
+  const sharedExposure = input.via === "share_link" || input.via === "public";
+  if (!sharedExposure) {
     return { lat: input.lat, lng: input.lng, precision: "exact" };
   }
   if (input.omitLocation) {

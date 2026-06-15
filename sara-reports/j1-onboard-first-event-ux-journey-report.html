@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J1 Onboarding — Deep UX Journey Report</title>
+<style>
+  :root{--navy:#0f172a;--navy2:#1e293b;--gold:#b8961e;--ink:#e2e8f0;--mut:#94a3b8;
+        --risk:#e0803a;--block:#dc2626;--adv:#3b82f6;--good:#16a34a;--card:#16213a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--navy);color:var(--ink);line-height:1.6}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px;color:#fff}
+  h2{font-size:19px;margin:38px 0 12px;color:var(--gold);border-bottom:1px solid #2a3a55;padding-bottom:6px}
+  h3{font-size:15px;margin:18px 0 8px;color:#fff}
+  .sub{color:var(--mut);font-size:14px}
+  .verdict{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid #2a3a55;border-radius:14px;padding:20px 22px;margin:18px 0}
+  .vbadge{font-weight:800;font-size:15px;padding:8px 16px;border-radius:999px;white-space:nowrap}
+  .v-friction{background:rgba(224,128,58,.16);color:var(--risk);border:1px solid var(--risk)}
+  .fix{background:rgba(184,150,30,.12);border-right:4px solid var(--gold);padding:12px 16px;border-radius:8px;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:14px}
+  .stat .n{font-size:22px;font-weight:800;color:#fff}
+  .stat .l{font-size:12px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+  th,td{text-align:right;padding:9px 11px;border-bottom:1px solid #2a3a55;vertical-align:top}
+  th{color:var(--gold);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .p-risk{background:rgba(224,128,58,.16);color:var(--risk)}
+  .p-block{background:rgba(220,38,38,.16);color:#f87171}
+  .p-adv{background:rgba(59,130,246,.16);color:#60a5fa}
+  .p-good{background:rgba(22,163,74,.18);color:#4ade80}
+  .meta{background:var(--navy2);border-radius:10px;padding:14px 18px;font-size:13.5px}
+  .meta b{color:#fff}
+  code{background:#0b1120;color:#fbbf24;padding:1px 6px;border-radius:5px;font-size:12.5px}
+  .note{background:#0b1120;border:1px dashed #3a4d6e;border-radius:10px;padding:14px 16px;font-size:13.5px;color:var(--mut)}
+  ul{margin:6px 0;padding-inline-start:20px}
+  .barwrap{background:#0b1120;border-radius:8px;overflow:hidden;height:22px;width:100%;max-width:260px;display:inline-block;vertical-align:middle}
+  .bar{height:100%;background:linear-gradient(90deg,#b8961e,#e0803a);display:flex;align-items:center;justify-content:flex-start;padding-inline-start:8px;color:#0b1120;font-weight:800;font-size:12px}
+  .imgrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+  .imgrow figure{margin:0;background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:8px}
+  .imgrow img{width:100%;border-radius:6px;display:block}
+  .imgrow figcaption{font-size:11.5px;color:var(--mut);margin-top:6px}
+  .ok{color:var(--good)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>J1 — Onboard, import &amp; create first event</h1>
+  <div class="sub">Deep UI/UX expert evaluation · journey-ux · web · MVP · 2026-06-15 · FEAT-GKC</div>
+
+  <div class="verdict">
+    <span class="vbadge v-friction">USABLE WITH FRICTION</span>
+    <div>Completes end-to-end on desktop &amp; mobile (RTL), with an exemplary add-event form — but a cluster of severity-3 risks adds real friction, concentrated where the <b>elderly anchor persona</b> is most exposed.</div>
+  </div>
+  <div class="fix"><b>Single highest-impact fix:</b> Rework the empty-timeline first-run state (F5+F6) — lead with one large, obvious <span dir="rtl">«أضف أول ذكرى»</span> primary action beside the nudge and defer the circle filter + secondary nav until events exist. That flips step 4 from a cognitive-walkthrough failure to a pass and moves the journey toward STRONG UX.</div>
+
+  <div class="grid">
+    <div class="stat"><div class="n">28<span style="font-size:14px;color:var(--mut)">/40</span></div><div class="l">Nielsen heuristic total (healthy 20–32)</div></div>
+    <div class="stat"><div class="n">HIGH</div><div class="l">Cognitive load · empty first-run screen</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">WCAG AA failures (1.4.3, 2.4.7)</div></div>
+    <div class="stat"><div class="n">8 / 3</div><div class="l">Findings: risk / advisory</div></div>
+  </div>
+
+  <h2>Run identity</h2>
+  <div class="meta">
+    <b>Persona:</b> new invited pilot user — entry for all personas; <b>Elderly Individuals most at-risk</b> (verdict anchor)<br>
+    <b>Business goal:</b> activation — populated, navigable timeline + first complete event saved<br>
+    <b>Success signal:</b> first event persists server-side and renders on the NOW-centered rail with explicit confirmation<br>
+    <b>Persona class:</b> anonymous → member &nbsp;·&nbsp; <b>Surface:</b> onboarding → archetypes First-timer + Mobile + A11y<br>
+    <b>Journey folder:</b> <code>.sara/journeys/j1-onboard-first-event/</code> &nbsp;·&nbsp; <b>Map:</b> <code>maps/web.yaml</code> (verified, fingerprint <code>j1-real-20260615</code>; no heal needed)<br>
+    <b>Coverage:</b> desktop 1280 · 390px mobile · ar-RTL (native default) &nbsp;·&nbsp; <b>Account:</b> ux.elderly.0615@example.com
+  </div>
+
+  <div class="note"><b>Environment note (recovered — NOT a J1 product defect).</b> First save hit <b>500 on POST /api/events</b> and the form showed the raw code <code>save_failed</code>. Diagnosed: the running <code>next dev</code> server held a <b>stale Prisma client / route bundle</b> predating the schema change that added the required <code>submitKey</code> idempotency field (known <code>prisma-singleton-stale-on-new-model</code> / <code>next-build-clobbers-dev</code> mode). The route <i>does</i> send <code>submitKey</code>; a clean restart made the same path persist (200) and render the node. Excluded from the UX verdict as env/tooling. The user-facing raw error string is recorded as the real product finding <b>F7</b>.</div>
+
+  <h2>Per-step UX read (project persona)</h2>
+  <table>
+    <tr><th>#</th><th>Step</th><th>UX read</th></tr>
+    <tr><td>1</td><td>Open invite signup</td><td>Strong: honest "closed invite-only beta" copy, clear CTA, SSO + sign-in. <b>But</b> F1 contrast, F2 invisible focus, F11 no show/hide, F10 gradient-text tell.</td></tr>
+    <tr><td>2</td><td>Email+password → continue</td><td>Clear <code>role=status</code> "أرسلنا رابط تأكيد…" (ARIA live). Minor: no resend/next-step guidance.</td></tr>
+    <tr><td>3</td><td>Confirm via email link</td><td class="ok">Frictionless — confirm → auto-session → <code>/timeline?welcome=1</code>, no second sign-in.</td></tr>
+    <tr><td>4</td><td>Empty guided timeline</td><td>Nudge readable. <b>But</b> HIGH load — 15 controls incl. a circle filter with zero events (F6); primary CTA tiny &amp; buried (F5); "press the timeline" not discoverable (cog-walkthrough Q2 fail); <code>welcome=1</code> a no-op (F9).</td></tr>
+    <tr><td>5</td><td>Add-event form</td><td class="ok"><b>Best screen.</b> Native radios + descriptive sub-labels + live privacy <code>role=status</code>; Me-Only default; native date picker (local-correct); Save gated on content; fully keyboard-tabbable; 70px radio rows.</td></tr>
+    <tr><td>6</td><td>Save → node on rail</td><td>After env fix: <code>/timeline?saved=1</code>, explicit success status, node with ✨, empty-state clears. Rail axis labels 8–10px (F8).</td></tr>
+  </table>
+
+  <h2>Findings</h2>
+  <table>
+    <tr><th>ID</th><th>Method / criterion</th><th>Finding &amp; fix</th><th>Sev</th></tr>
+    <tr><td><b>F1</b></td><td>WCAG 1.4.3 / floor contrast · signup</td><td>Password hint <span dir="rtl">«٨ أحرف على الأقل»</span> #a3a3a3 on white = <b>2.52</b> (AA needs 4.5), 12px. Hurts elderly persona. <b>Fix:</b> darken to ≥4.5.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>F2</b></td><td>WCAG 2.4.7 Focus Visible · signup</td><td>Email &amp; password inputs render <code>outline-color:transparent</code>, no box-shadow on focus → no visible keyboard focus. <b>Fix:</b> visible focus ring.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>F3</b></td><td>floor occluded/offscreen control · 390px</td><td>Timeline header <code>overflow-x:visible</code>, scrollW 557 vs 390, no scroll container; <b>export &amp; sign-out render off the left edge, unreachable</b>. Risk for J1 (off critical path); <b>blocking for J4-export on mobile</b>. <b>Fix:</b> collapse to menu/scroll strip ≤480px.</td><td><span class="pill p-risk">risk · N4</span></td></tr>
+    <tr><td><b>F4</b></td><td>floor tap-target / WCAG · 390px</td><td>Zoom +/− 20px, presets 21px, filter chips 25px, <b>zoom slider 4px tall</b> — all below 44px. <b>Fix:</b> ≥44px hit areas.</td><td><span class="pill p-risk">risk · N2-3</span></td></tr>
+    <tr><td><b>F5</b></td><td>Method 4 hierarchy / Heuristic 6 · timeline</td><td>Primary "+إضافة حدث جديد" CTA is 11px / 33px tall, parked at bottom of a secondary cluster while the nudge tells the user to act. Below 14px body &amp; 44px tap floors. <b>Fix:</b> promote to a prominent primary button by the nudge.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>F6</b></td><td>Method 6 cognitive load · timeline</td><td><b>15 interactive controls</b> on the empty first-run screen (floor ≤4/decision, ≤5 nav), incl. a 4-button circle filter with zero events (pure extraneous load). Load = HIGH. <b>Fix:</b> progressive disclosure — one add action first; defer filters/nav until events exist.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>F7</b></td><td>Heuristic 9 error recovery · save</td><td>On failure the form surfaced the raw developer code <code>save_failed</code> instead of a human, recoverable message. <b>Fix:</b> friendly retry copy + keep entered data (data already kept).</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>F8</b></td><td>Method 4 legibility · rail</td><td>Axis month labels 8px, NOW 10px — below the 12px legibility floor. Worst for elderly. <b>Fix:</b> ≥12px axis labels.</td><td><span class="pill p-risk">risk · N2</span></td></tr>
+    <tr><td><b>F9</b></td><td>Heuristic 1 / journey gap</td><td><code>?welcome=1</code> shows no first-run celebration (param is a no-op; matches journey.md). <b>Fix:</b> light session-1 welcome/orient overlay.</td><td><span class="pill p-adv">advisory · N1</span></td></tr>
+    <tr><td><b>F10</b></td><td>Method 5 · gradient_text tell · signup</td><td>Brand wordmark uses <code>background-clip:text</code> gradient (blue→indigo→orange); orange stop borderline on white. AI identity tell. <b>Fix:</b> solid brand color; emphasis via weight/size.</td><td><span class="pill p-adv">advisory · N1</span></td></tr>
+    <tr><td><b>F11</b></td><td>Heuristic 5/6 · signup</td><td>Password field has no show/hide toggle. <b>Fix:</b> add a reveal toggle (helps elderly verify input).</td><td><span class="pill p-adv">advisory · N1</span></td></tr>
+  </table>
+
+  <h2>Scores</h2>
+  <h3>Nielsen heuristic health — 28/40</h3>
+  <div class="barwrap"><div class="bar" style="width:70%">28 / 40 · healthy band</div></div>
+  <p class="sub">Weakest heuristics: #9 error recovery (F7), #8 minimalist/load (F6), #4/#6 hierarchy &amp; recognition (F5/F8). Strongest: #1 status visibility (live <code>role=status</code> toasts), #3 user control (auto-session, no double sign-in), #5 error prevention (Save gated on content).</p>
+
+  <table>
+    <tr><th>Lens</th><th>Result</th></tr>
+    <tr><td>WCAG AA</td><td><b>FAIL</b> — 1.4.3 contrast (F1), 2.4.7 focus visible (F2); target-size concerns (F4). <span class="ok">PASS</span> — native radios + label association + logical keyboard order.</td></tr>
+    <tr><td>Cognitive walkthrough</td><td>Steps 1–3, 5–6 pass all four questions. <b>Step 4 fails Q2</b> — instructed "press the timeline" action is not discoverable; fallback CTA de-emphasized.</td></tr>
+    <tr><td>Cognitive load</td><td><b>HIGH</b> on empty timeline (F6); LOW on signup &amp; add-event.</td></tr>
+    <tr><td>AI-slop test</td><td><b>Shows tells</b> (advisory) — first-order partial: gradient-text wordmark (F10). Otherwise the cosmic-timeline aesthetic is distinctive, not reflex-SaaS.</td></tr>
+    <tr><td>RTL / locale</td><td><span class="ok">PASS</span> — native RTL throughout: mirrored, NOW-centered (past-right/future-left), no untranslated strings, no RTL-only overlap on the critical path.</td></tr>
+  </table>
+
+  <h2>Multi-persona stress findings</h2>
+  <table>
+    <tr><th>Archetype</th><th>Red flags found</th></tr>
+    <tr><td>First-timer (clarity)</td><td>Empty-screen overload (F6); the one instructed action ("press the timeline") is not a visible affordance, and the explicit CTA is tiny &amp; buried (F5); <code>save_failed</code> jargon on error (F7).</td></tr>
+    <tr><td>Distracted mobile</td><td>Export &amp; sign-out off-screen with no scroll (F3); 10 sub-44px tap targets incl. a 4px zoom slider (F4). Critical path (note→save) still works on mobile.</td></tr>
+    <tr><td>Accessibility-dependent</td><td>Invisible input focus (F2); contrast failures (F1) + 8–10px rail labels (F8). <span class="ok">Positives:</span> native radios, label association, logical tab order, native date picker.</td></tr>
+  </table>
+
+  <h2>Positives (kept honest)</h2>
+  <ul>
+    <li class="ok">Confirm → auto-session is genuinely frictionless (no double sign-in).</li>
+    <li class="ok">Add-event form is exemplary: native radios + descriptive sub-labels + live privacy <code>role=status</code>, Me-Only default, native local-correct date picker, Save gated on content, fully keyboard-operable, 70px radio rows, reachable Save on 390px, no mobile horizontal scroll.</li>
+    <li class="ok">Explicit success toasts at steps 2 &amp; 6 (ARIA-live system status).</li>
+    <li class="ok">RTL is native and correct end-to-end.</li>
+  </ul>
+
+  <h2>Evidence</h2>
+  <div class="imgrow">
+    <figure><img src="../.sara/journeys/j1-onboard-first-event/runs/ux/web/20260615T061000Z/s1-signup-desktop.png" alt="signup"><figcaption>S1 · signup (desktop)</figcaption></figure>
+    <figure><img src="../.sara/journeys/j1-onboard-first-event/runs/ux/web/20260615T061000Z/s4-empty-timeline-desktop.png" alt="empty timeline"><figcaption>S4 · empty timeline — HIGH load (F5/F6)</figcaption></figure>
+    <figure><img src="../.sara/journeys/j1-onboard-first-event/runs/ux/web/20260615T061000Z/s5-add-event-form-desktop.png" alt="add event"><figcaption>S5 · add-event form (best screen)</figcaption></figure>
+    <figure><img src="../.sara/journeys/j1-onboard-first-event/runs/ux/web/20260615T061000Z/s6-saved-timeline-desktop.png" alt="saved"><figcaption>S6 · saved — node on rail</figcaption></figure>
+    <figure><img src="../.sara/journeys/j1-onboard-first-event/runs/ux/web/20260615T061000Z/s6-timeline-390px.png" alt="mobile"><figcaption>390px — header overflow (F3), tiny targets (F4)</figcaption></figure>
+  </div>
+
+  <h2>Verdict &amp; follow-ups</h2>
+  <p><b>USABLE WITH FRICTION.</b> No severity-4/blocking defect for J1's own completion; J1's functional <b>VALUE DELIVERED</b> stands (UX does not flip it). Re-run journey-ux after the first-run-state rework to re-score step 4. F3 (mobile header offscreen) must be re-tested under <b>J4</b> where export is on the critical path — it is blocking there. Track the dev stale-Prisma-client env risk (clean restart after any schema change).</p>
+  <p class="sub">AI-slop result and cognitive-load level are reported alongside the verdict, not folded into the band.</p>
+</div>
+</body>
+</html>

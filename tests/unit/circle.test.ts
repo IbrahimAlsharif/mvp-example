@@ -33,6 +33,15 @@ describe("decideAccess truth table (US-3.1 AC-6/AC-7)", () => {
     expect(decideAccess(null, ev("PUBLIC_UNLISTED"), false)).toBe(false);
   });
 
+  it("PUBLIC is granted to any authenticated viewer but denied to anonymous (login-required, not discoverable)", () => {
+    // any signed-in account, no connection / family membership required
+    expect(decideAccess(OTHER, ev("PUBLIC"), false)).toBe(true);
+    // logged-out viewer is denied — PUBLIC is shared, not anonymously discoverable
+    expect(decideAccess(null, ev("PUBLIC"), false)).toBe(false);
+    // soft-deleted PUBLIC is still invisible to everyone (G2)
+    expect(decideAccess(OTHER, ev("PUBLIC", true), false)).toBe(false);
+  });
+
   it("FAMILY grants a member and denies a non-member", () => {
     expect(decideAccess(OTHER, ev("FAMILY"), true)).toBe(true);
     expect(decideAccess(OTHER, ev("FAMILY"), false)).toBe(false);
@@ -52,21 +61,28 @@ describe("canViewEvent (resolves Family roster, currently empty per US-3.5)", ()
     expect(await canViewEvent(OTHER, ev("FAMILY"))).toBe(false);
   });
 
-  it("anonymous viewer denied everything they don't own", async () => {
+  it("anonymous viewer denied everything they don't own — including PUBLIC", async () => {
     expect(await canViewEvent(null, ev("ME_ONLY"))).toBe(false);
     expect(await canViewEvent(null, ev("FAMILY"))).toBe(false);
     expect(await canViewEvent(null, ev("PUBLIC_UNLISTED"))).toBe(false);
+    // PUBLIC requires authentication: logged-out is denied even for PUBLIC
+    expect(await canViewEvent(null, ev("PUBLIC"))).toBe(false);
+  });
+
+  it("an authenticated non-owner can view another account's PUBLIC event with no roster lookup", async () => {
+    expect(await canViewEvent(OTHER, ev("PUBLIC"))).toBe(true);
   });
 });
 
 describe("circle constants", () => {
-  it("offers exactly three circles, Me-Only first (AC-1)", () => {
-    expect(CIRCLES).toEqual(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED"]);
+  it("offers four circles, Me-Only first and PUBLIC last (AC-1)", () => {
+    expect(CIRCLES).toEqual(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED", "PUBLIC"]);
     expect(DEFAULT_CIRCLE).toBe("ME_ONLY"); // G1
   });
 
   it("maps circles to content-blind telemetry tokens", () => {
     expect(circleTelemetry("ME_ONLY")).toBe("me_only");
     expect(circleTelemetry("PUBLIC_UNLISTED")).toBe("public_unlisted");
+    expect(circleTelemetry("PUBLIC")).toBe("public");
   });
 });

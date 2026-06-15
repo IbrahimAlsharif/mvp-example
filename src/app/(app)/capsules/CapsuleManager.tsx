@@ -61,7 +61,15 @@ export function CapsuleManager({ initial }: { initial: Capsule[] }) {
     if (res.ok) setList((l) => l.filter((c) => c.id !== id));
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  // The unlock date must be STRICTLY future — the server rejects today as
+  // `not_future`. Constrain the picker to tomorrow onward so the UI rule matches
+  // the server rule (no confusing "pick today → rejected").
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // Human label for a capsule's recipient circle (shown on each pending row so a
+  // misconfigured recipient is visible before unlock — AC-8).
+  const recipientLabel = (circle: string) =>
+    circle === "ME_ONLY" ? t("recipient_me") : t("recipient_family");
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8" dir="rtl">
@@ -93,7 +101,7 @@ export function CapsuleManager({ initial }: { initial: Capsule[] }) {
         </select>
 
         <label className="text-sm font-semibold text-neutral-700" htmlFor="cap-date">{t("unlockDate")}</label>
-        <input id="cap-date" type="date" required min={today} value={unlockLocalDay} onChange={(e) => setUnlockLocalDay(e.target.value)} className="rounded-xl border border-neutral-300 px-3.5 py-2.5" />
+        <input id="cap-date" type="date" required min={tomorrow} value={unlockLocalDay} onChange={(e) => setUnlockLocalDay(e.target.value)} className="rounded-xl border border-neutral-300 px-3.5 py-2.5" />
 
         <button type="submit" className="tap-target inline-flex items-center justify-center gap-1.5 rounded-xl bg-accent-gradient px-5 py-2.5 font-bold text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/40">
           <Send className="h-4 w-4" aria-hidden /> {t("seal")}
@@ -110,7 +118,7 @@ export function CapsuleManager({ initial }: { initial: Capsule[] }) {
               <li key={c.id} className="flex items-center justify-between rounded-xl border border-neutral-200 px-3 py-2 text-sm">
                 <span className="flex items-center gap-2">
                   <Lock className="h-3.5 w-3.5 text-neutral-400" aria-hidden />
-                  {t(`type_${c.type.toLowerCase()}` as "type_message")} · {c.unlockLocalDay}
+                  {t(`type_${c.type.toLowerCase()}` as "type_message")} · {c.unlockLocalDay} · {recipientLabel(c.recipientCircle)}
                   {c.status === "UNDELIVERABLE" && <span className="text-amber-600"> · {t("undeliverable")}</span>}
                 </span>
                 <button type="button" onClick={() => cancel(c.id)} className="tap-target inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600">

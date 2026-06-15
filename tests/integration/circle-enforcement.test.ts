@@ -16,7 +16,7 @@ async function makeAccount(tag: string) {
   return acc;
 }
 
-async function makeEvent(accountId: string, circle: "ME_ONLY" | "FAMILY" | "PUBLIC_UNLISTED") {
+async function makeEvent(accountId: string, circle: "ME_ONLY" | "FAMILY" | "PUBLIC_UNLISTED" | "PUBLIC") {
   return prisma.event.create({
     data: { accountId, circle, occurredOn: new Date(), submitKey: randomToken(10) },
   });
@@ -66,6 +66,18 @@ describe("US-3.1 privacy enforcement (server-side, second account)", () => {
     const other = await makeAccount("pother");
     const event = await makeEvent(owner.id, "PUBLIC_UNLISTED");
     expect(await getViewableEvent(other.id, event.id)).toBeNull();
+  });
+
+  it("PUBLIC event is directly readable by any authenticated second account, but NOT anonymously", async () => {
+    if (!dbUp) return;
+    const owner = await makeAccount("pubowner");
+    const other = await makeAccount("pubother");
+    const event = await makeEvent(owner.id, "PUBLIC");
+    // owner and any signed-in second account (no connection) can read it directly
+    expect(await getViewableEvent(owner.id, event.id)).not.toBeNull();
+    expect(await getViewableEvent(other.id, event.id)).not.toBeNull();
+    // logged-out viewer is denied — PUBLIC is shared but not anonymously discoverable
+    expect(await getViewableEvent(null, event.id)).toBeNull();
   });
 
   it("a soft-deleted event is unreachable even by its owner (G2)", async () => {

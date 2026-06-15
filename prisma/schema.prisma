@@ -1,7 +1,12 @@
 // Human Timeline Network — data model.
 //
 // Load-bearing invariants encoded here:
-//  - PrivacyCircle has EXACTLY three values (US-3.1).
+//  - PrivacyCircle has FOUR values (US-3.1, extended): ME_ONLY, FAMILY,
+//    PUBLIC_UNLISTED (link-only — direct reads denied, reachable only via a valid
+//    share-link token), and PUBLIC. PUBLIC is directly viewable by ANY
+//    AUTHENTICATED account (no connection required) but is NOT discoverable to
+//    logged-out visitors. PUBLIC is the only circle whose cross-account read is
+//    granted without a connection — see decideAccess / visibilityClauses.
 //  - Event.circle and Event.legacyConsent are COLUMNS on the Event row, so they
 //    commit in the same single-row insert as the event — circle/consent can never
 //    be missing from a persisted event (US-3.1 AC-9, US-1.1 AC-7, guardrail G5).
@@ -26,6 +31,7 @@ enum PrivacyCircle {
   ME_ONLY
   FAMILY
   PUBLIC_UNLISTED
+  PUBLIC
 }
 
 enum AccountStatus {
@@ -90,6 +96,7 @@ model Invitation {
 model Account {
   id            String        @id @default(cuid())
   email         String        @unique // duplicate-account prevention (US-0.1 AC-6)
+  displayName   String? // human-facing name shown in the UI; falls back to email local-part when null
   passwordHash  String? // null for social-only accounts
   status        AccountStatus @default(UNCONFIRMED)
   defaultCircle PrivacyCircle @default(ME_ONLY) // G1 / US-0.1 AC-8
@@ -188,6 +195,7 @@ model Event {
   occurredOn    DateTime // canonical absolute Gregorian date (US-1.1 AC-5)
   locationLat   Float?
   locationLng   Float?
+  placeName     String? // structured free-text place (J2.4); stored on its own column, NOT folded into the note
   circle        PrivacyCircle @default(ME_ONLY) // ATOMIC with event (US-3.1 AC-9)
   legacyConsent Boolean       @default(false) // legacy boolean (kept; mirrors GRANTED)
   // Tri-state consent + its decision timestamp, committed ATOMICALLY with the

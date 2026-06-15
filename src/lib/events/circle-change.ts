@@ -16,10 +16,14 @@ import { acceptedConnectionsByTier } from "@/lib/connections";
  * their next server-validated request with no stale grant.
  */
 
+// Reach ordering. PUBLIC (any authenticated account) is the widest reach and
+// ranks above PUBLIC_UNLISTED (link-holders only), so moving PUBLIC->anything is
+// a downgrade and anything->PUBLIC is an upgrade.
 const RANK: Record<PrivacyCircle, number> = {
   ME_ONLY: 0,
   FAMILY: 1,
   PUBLIC_UNLISTED: 2,
+  PUBLIC: 3,
 };
 
 /** A change is a downgrade when the target circle is narrower (lower rank). */
@@ -49,13 +53,17 @@ export async function changeEventCircle(input: {
   const from = event.circle;
   if (from === input.to) return { ok: false, reason: "noop" };
 
-  const leavingPublic = from === "PUBLIC_UNLISTED" && input.to !== "PUBLIC_UNLISTED";
+  // Share-links exist ONLY for PUBLIC_UNLISTED (the link-only circle); PUBLIC has
+  // no links to revoke. So revocation triggers exactly when leaving
+  // PUBLIC_UNLISTED — including PUBLIC_UNLISTED -> PUBLIC, which widens reach but
+  // still invalidates the old unlisted links.
+  const leavingUnlisted = from === "PUBLIC_UNLISTED" && input.to !== "PUBLIC_UNLISTED";
 
   // Atomic: update the circle AND revoke any live unlisted links together, so a
   // downgrade can never leave the link valid while the event is tightened.
   const linksRevoked = await prisma.$transaction(async (tx) => {
     await tx.event.update({ where: { id: event.id }, data: { circle: input.to } });
-    if (leavingPublic) {
+    if (leavingUnlisted) {
       const res = await tx.shareLink.updateMany({
         where: { eventId: event.id, revokedAt: null },
         data: { revokedAt: new Date() },

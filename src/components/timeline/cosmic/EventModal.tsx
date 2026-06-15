@@ -81,8 +81,9 @@ export function EventModal({
       onKeyDown={onKeyDown}
       data-testid="event-modal-backdrop"
     >
-      {/* dimmed cosmic backdrop */}
-      <div className="absolute inset-0 bg-cosmic-bg/80 backdrop-blur-sm" aria-hidden />
+      {/* dimmed backdrop — a neutral slate scrim so the modal reads above the
+          light timeline surface (theme-independent, not the white page color) */}
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" aria-hidden />
 
       <div
         ref={dialogRef}

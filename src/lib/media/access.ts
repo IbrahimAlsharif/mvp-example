@@ -22,7 +22,7 @@ export type MediaAccess =
       ok: true;
       storageKey: string;
       mimeType: string;
-      via: "owner" | "family_member" | "share_link";
+      via: "owner" | "family_member" | "public" | "share_link";
     }
   | { ok: false; reason: "not_found" | "not_persisted" | "no_auth" | "expired" | "revoked" };
 
@@ -49,9 +49,16 @@ export async function resolveMediaAccess(input: {
     return { ok: true, storageKey: media.storageKey, mimeType: media.mimeType, via: "share_link" };
   }
 
-  // Authenticated owner/Family path.
+  // Authenticated owner / Family / PUBLIC path. canViewEvent grants PUBLIC to any
+  // authenticated viewer (and still denies anonymous), so PUBLIC media is served
+  // here without a share token.
   const allowed = await canViewEvent(input.viewerAccountId, event);
   if (!allowed) return { ok: false, reason: "no_auth" };
-  const via = input.viewerAccountId === event.accountId ? "owner" : "family_member";
+  const via =
+    input.viewerAccountId === event.accountId
+      ? "owner"
+      : event.circle === "PUBLIC"
+        ? "public"
+        : "family_member";
   return { ok: true, storageKey: media.storageKey, mimeType: media.mimeType, via };
 }

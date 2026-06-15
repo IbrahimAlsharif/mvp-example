@@ -27,6 +27,11 @@ export type ViewableEvent = {
  * Note PUBLIC_UNLISTED denies *direct* event/media reads here — public content
  * is reachable only through a valid unlisted share-link token, which is checked
  * separately in the media/share routes (US-3.3), not via this owner/roster gate.
+ *
+ * PUBLIC, by contrast, IS a direct read here — but only for an AUTHENTICATED
+ * viewer. Any logged-in account may read a PUBLIC event with no connection; a
+ * logged-out viewer (viewerAccountId === null) is denied, so PUBLIC is shared
+ * but never anonymously discoverable.
  */
 export function decideAccess(
   viewerAccountId: string | null,
@@ -42,6 +47,10 @@ export function decideAccess(
       return isFamilyMember;
     case "PUBLIC_UNLISTED":
       return false; // direct read denied; link path handled by US-3.3
+    case "PUBLIC":
+      // Directly viewable by any authenticated account; denied to logged-out
+      // viewers so PUBLIC is shared but not anonymously discoverable.
+      return viewerAccountId !== null;
     default:
       return false; // fail closed on any unknown circle
   }
@@ -92,8 +101,9 @@ export async function getViewableEvent(
   return allowed ? event : null;
 }
 
-/** The exactly-three circles, in display order, Me-Only first (US-3.1 AC-1). */
-export const CIRCLES: PrivacyCircle[] = ["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED"];
+/** The four circles, in display order, Me-Only first (US-3.1 AC-1). PUBLIC is
+ *  the widest reach and sits last. */
+export const CIRCLES: PrivacyCircle[] = ["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED", "PUBLIC"];
 
 /** Default circle for any create/import path (G1). */
 export const DEFAULT_CIRCLE: PrivacyCircle = "ME_ONLY";

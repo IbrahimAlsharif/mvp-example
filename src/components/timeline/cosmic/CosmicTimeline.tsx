@@ -26,12 +26,15 @@ import { granularityToZoom, type Granularity } from "@/lib/timeline/granularity"
 
 type Kind = "image" | "audio" | "video" | "location" | "note";
 
+// RGB triplets legible on the light timeline surface — these match the
+// redefined cosmic-* tokens (brand blue, deepened teal/rose/violet, accent
+// orange) so node glow, connectors, and chips stay readable on white.
 const KIND_GLOW: Record<Kind, string> = {
-  image: "56,189,248", // blue
-  audio: "251,113,133", // rose
-  video: "45,212,191", // teal
-  location: "168,85,247", // purple
-  note: "251,191,36", // amber
+  image: "37,99,235", // brand blue
+  audio: "225,29,72", // rose-600
+  video: "13,148,136", // teal-600
+  location: "124,58,237", // violet-600
+  note: "234,88,12", // accent orange
 };
 
 const KIND_ICON: Record<Kind, string> = {
@@ -166,19 +169,12 @@ export function CosmicTimeline({
   const [zoom, setZoom] = useState(50);
   const spanDays = useMemo(() => zoomToSpanDays(zoom), [zoom]);
 
-  // Wheel / trackpad-pinch over the rail zooms the time axis, like an NLE. We
-  // attach via onWheel and preventDefault so the page doesn't scroll under it.
-  // Scroll up (deltaY < 0) = zoom IN = lower zoom value (DAW convention).
+  // Wheel / trackpad-pinch over the rail zooms the time axis, like an NLE, and
+  // we preventDefault so the page doesn't scroll under it. React attaches wheel
+  // listeners as PASSIVE, where preventDefault is a no-op (and warns), so we bind
+  // a NON-passive native listener on the rail via the effect below instead of an
+  // onWheel prop. Scroll up (deltaY < 0) = zoom IN = lower zoom (DAW convention).
   const wheelLock = useRef(0);
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    // Coalesce high-frequency trackpad events to keep steps perceptible.
-    const ts = e.timeStamp;
-    if (ts - wheelLock.current < 16) return;
-    wheelLock.current = ts;
-    const dir = e.deltaY < 0 ? -1 : 1; // up → zoom in (smaller window)
-    setZoom((z) => clamp(z + dir * WHEEL_STEP, ZOOM_MIN, ZOOM_MAX));
-  }, []);
 
   // Split + position by REAL time distance from NOW within the half-window.
   const { past, future } = useMemo(() => {
@@ -205,6 +201,24 @@ export function CosmicTimeline({
   // is about to click, then emit that instant on click for the quick-add popup.
   const railRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ atISO: string; side: "past" | "future"; pct: number } | null>(null);
+
+  // Bind the wheel-zoom as a NON-passive native listener so preventDefault is
+  // honored (a React onWheel prop is passive → preventDefault no-ops and warns).
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Coalesce high-frequency trackpad events to keep steps perceptible.
+      const ts = e.timeStamp;
+      if (ts - wheelLock.current < 16) return;
+      wheelLock.current = ts;
+      const dir = e.deltaY < 0 ? -1 : 1; // up → zoom in (smaller window)
+      setZoom((z) => clamp(z + dir * WHEEL_STEP, ZOOM_MIN, ZOOM_MAX));
+    };
+    rail.addEventListener("wheel", onWheel, { passive: false });
+    return () => rail.removeEventListener("wheel", onWheel);
+  }, []);
 
   const instantFromClientX = useCallback(
     (clientX: number) => {
@@ -269,7 +283,6 @@ export function CosmicTimeline({
         ref={railRef}
         className="relative mt-3 h-64 cursor-crosshair touch-pan-y select-none"
         dir="rtl"
-        onWheel={onWheel}
         onMouseMove={onRailMove}
         onMouseLeave={() => setHover(null)}
         onClick={onRailClick}
@@ -617,6 +630,13 @@ function Node({
           </span>
         ) : (
           <span className="mt-2 block text-[11px] italic text-cosmic-muted">{t("noNote")}</span>
+        )}
+
+        {n.e.placeName && (
+          <span className="mt-1.5 flex items-center gap-1 text-[10px] text-cosmic-muted">
+            <span aria-hidden>📍</span>
+            <span className="truncate">{n.e.placeName}</span>
+          </span>
         )}
 
         <span className="mt-2 block text-[10px] font-bold text-cosmic-blue">{t("openEventHint")}</span>

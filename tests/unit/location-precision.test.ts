@@ -29,6 +29,13 @@ describe("US-2.2 shared-location precision (AC-6/AC-7)", () => {
     expect(shared.lng).toBe(46.7);
     // The exact coordinate is never present in the shared view.
     expect(shared.lat).not.toBe(lat);
+
+    // A non-family authenticated viewer of a PUBLIC event is also exposure beyond
+    // the owner+family roster, so it is coarsened identically (never exact GPS).
+    const pub = locationForViewer({ lat, lng, circle: "PUBLIC", via: "public" });
+    expect(pub.precision).toBe("coarse");
+    expect(pub.lat).toBe(24.7);
+    expect(pub.lat).not.toBe(lat);
   });
 
   it("omits location entirely when the owner opts out, or when there is none", () => {

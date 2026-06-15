@@ -35,7 +35,7 @@ export async function sendEmail(opts: {
 
 export function confirmEmailBody(link: string): { subject: string; text: string } {
   return {
-    subject: "تأكيد حسابك في الخط الزمني للحياة",
+    subject: "تأكيد حسابك في حكاية",
     text: `مرحبًا،\nاضغط على الرابط لتأكيد حسابك:\n${link}\nالرابط صالح لمدة محدودة ويُستخدم مرة واحدة.`,
   };
 }

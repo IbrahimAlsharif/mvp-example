@@ -43,20 +43,22 @@ const config: Config = {
           800: "#9A3412",
           900: "#7C2D12",
         },
-        // Cosmic theme — dark surfaces + neon accents, scoped to the timeline
-        // command center (.timeline-cosmic). Not used by the light app identity.
+        // Timeline command-center theme — LIGHT, joyful palette matching the
+        // app identity (brand blue + accent orange + glass). Scoped to
+        // .timeline-cosmic. Token names kept (`cosmic-*`) so the whole timeline
+        // tree flips palette by value, not by rewriting every class name.
         cosmic: {
-          bg: "#070B1A", // deepest background
-          surface: "#0E1430", // panels / cards
-          surface2: "#141B3D", // raised insets
-          border: "#26305C", // hairline dividers
-          ink: "#E6ECFF", // primary text on dark
-          muted: "#8C97C2", // secondary text
-          blue: "#38BDF8", // neon cyan-blue (past / primary)
-          teal: "#2DD4BF",
-          purple: "#A855F7", // future / plans
-          amber: "#FBBF24", // NOW / highlights
-          rose: "#FB7185",
+          bg: "#FFFFFF", // bright base (was the deep navy)
+          surface: "#FFFFFF", // panels / cards
+          surface2: "#EFF5FF", // raised insets / hover (brand-50)
+          border: "#DBE8FE", // soft brand hairline (brand-100)
+          ink: "#1E293B", // primary text on light (slate-800)
+          muted: "#64748B", // secondary text (slate-500)
+          blue: "#2563EB", // brand blue (past / primary)
+          teal: "#0D9488", // deepened teal (legible on white)
+          purple: "#7C3AED", // future / plans (violet-600)
+          amber: "#EA580C", // NOW / highlights → warm accent orange
+          rose: "#E11D48", // rose-600
         },
       },
       backgroundImage: {
@@ -65,22 +67,23 @@ const config: Config = {
         "accent-gradient": "linear-gradient(135deg, #FB923C 0%, #F97316 50%, #EA580C 100%)",
         "app-canvas":
           "radial-gradient(1200px 600px at 100% -10%, #DBE8FE 0%, transparent 55%), radial-gradient(900px 500px at -10% 10%, #FFEDD5 0%, transparent 50%), linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)",
-        // Cosmic canvas — dark navy/black with faint nebula glows, scoped to the
-        // timeline "command center" surface (.timeline-cosmic). Independent of
-        // the light app identity so it never leaks to other pages.
+        // Timeline canvas — LIGHT, airy aurora that matches the app identity:
+        // soft blue + orange blooms over a near-white gradient. Scoped to
+        // .timeline-cosmic so it never leaks to other pages.
         "cosmic-canvas":
-          "radial-gradient(1000px 700px at 80% -5%, rgba(56, 189, 248, 0.10) 0%, transparent 55%), radial-gradient(900px 600px at 0% 110%, rgba(168, 85, 247, 0.12) 0%, transparent 55%), linear-gradient(180deg, #060A18 0%, #0A0F24 60%, #070B1A 100%)",
+          "radial-gradient(1100px 700px at 85% -8%, rgba(37, 99, 235, 0.10) 0%, transparent 55%), radial-gradient(950px 620px at -5% 108%, rgba(249, 115, 22, 0.10) 0%, transparent 55%), linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 60%, #EFF5FF 100%)",
       },
       boxShadow: {
         brand: "0 10px 30px -10px rgba(37, 99, 235, 0.35)",
         accent: "0 10px 30px -10px rgba(249, 115, 22, 0.45)",
         card: "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.12)",
-        // Cosmic neon glows for nodes/badges on the dark timeline surface.
-        "glow-blue": "0 0 0 1px rgba(56,189,248,0.35), 0 0 18px -2px rgba(56,189,248,0.55)",
-        "glow-purple": "0 0 0 1px rgba(168,85,247,0.35), 0 0 18px -2px rgba(168,85,247,0.55)",
-        "glow-amber": "0 0 0 1px rgba(251,191,36,0.4), 0 0 22px -2px rgba(251,191,36,0.6)",
-        "glow-teal": "0 0 0 1px rgba(45,212,191,0.35), 0 0 18px -2px rgba(45,212,191,0.55)",
-        "cosmic-panel": "0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px -28px rgba(0,0,0,0.8)",
+        // Soft colored glows for nodes/badges on the LIGHT timeline surface —
+        // a tinted ring + diffuse drop shadow instead of dark-mode neon bloom.
+        "glow-blue": "0 0 0 1px rgba(37,99,235,0.18), 0 8px 22px -8px rgba(37,99,235,0.45)",
+        "glow-purple": "0 0 0 1px rgba(124,58,237,0.18), 0 8px 22px -8px rgba(124,58,237,0.45)",
+        "glow-amber": "0 0 0 1px rgba(234,88,12,0.20), 0 8px 24px -8px rgba(234,88,12,0.50)",
+        "glow-teal": "0 0 0 1px rgba(13,148,136,0.18), 0 8px 22px -8px rgba(13,148,136,0.45)",
+        "cosmic-panel": "0 1px 0 rgba(255,255,255,0.7) inset, 0 20px 60px -24px rgba(37,99,235,0.30)",
       },
       keyframes: {
         "fade-in-up": {

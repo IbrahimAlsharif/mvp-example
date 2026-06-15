@@ -8,17 +8,23 @@ import { PublicWarningDialog } from "./PublicWarningDialog";
 /**
  * Privacy-circle selector (US-3.1 AC-1/AC-4/AC-5, G1/G6).
  *
- * Offers exactly three circles with Me-Only pre-selected (G1). Each option
- * states who can see the memory, in unambiguous Arabic, RTL-correct (G6,
- * perceived-trust). Selecting Public on a media-bearing event opens the blocking
- * child-media warning before the change is applied (AC-4, content-blind).
+ * Offers four circles with Me-Only pre-selected (G1). Each option states who can
+ * see the memory, in unambiguous Arabic, RTL-correct (G6, perceived-trust).
+ * Selecting either public circle (PUBLIC_UNLISTED link-only, or PUBLIC directly
+ * viewable by any signed-in user) on a media-bearing event opens the blocking
+ * child-media warning before the change is applied (AC-4, content-blind). PUBLIC
+ * is the widest reach, so it is warned at least as strongly as PUBLIC_UNLISTED.
  */
-const ORDER: PrivacyCircle[] = ["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED"];
+const ORDER: PrivacyCircle[] = ["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED", "PUBLIC"];
 const KEY: Record<PrivacyCircle, string> = {
   ME_ONLY: "me_only",
   FAMILY: "family",
   PUBLIC_UNLISTED: "public_unlisted",
+  PUBLIC: "public",
 };
+/** Circles that expose a media-bearing event beyond the owner+family roster and
+ *  must trigger the blocking child-media warning (AC-4, content-blind). */
+const PUBLIC_CIRCLES: PrivacyCircle[] = ["PUBLIC_UNLISTED", "PUBLIC"];
 
 export function CircleSelector({
   value,
@@ -30,12 +36,16 @@ export function CircleSelector({
   hasMedia: boolean;
 }) {
   const t = useTranslations("circle");
-  const [pendingPublic, setPendingPublic] = useState(false);
+  // Holds the public circle awaiting child-media-warning acknowledgement, or
+  // null when no warning is pending (AC-4). Tracks WHICH public circle so the
+  // dialog applies the one the owner actually picked.
+  const [pendingPublic, setPendingPublic] = useState<PrivacyCircle | null>(null);
 
   function select(c: PrivacyCircle) {
-    if (c === "PUBLIC_UNLISTED" && hasMedia) {
-      // Defer applying Public until the blocking warning is acknowledged (AC-4).
-      setPendingPublic(true);
+    if (PUBLIC_CIRCLES.includes(c) && hasMedia) {
+      // Defer applying any public circle until the blocking warning is
+      // acknowledged (AC-4).
+      setPendingPublic(c);
       return;
     }
     onChange(c);
@@ -80,12 +90,13 @@ export function CircleSelector({
       </span>
 
       <PublicWarningDialog
-        open={pendingPublic}
+        open={pendingPublic !== null}
         onConfirm={() => {
-          setPendingPublic(false);
-          onChange("PUBLIC_UNLISTED");
+          const next = pendingPublic;
+          setPendingPublic(null);
+          if (next) onChange(next); // apply the exact public circle the owner picked
         }}
-        onCancel={() => setPendingPublic(false)} // leaves circle unchanged (AC-4)
+        onCancel={() => setPendingPublic(null)} // leaves circle unchanged (AC-4)
       />
     </fieldset>
   );

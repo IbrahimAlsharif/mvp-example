@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PrivacyCircle } from "@prisma/client";
 import { ImagePlus, Film, Mic, FileText, X, Loader2, MapPin } from "lucide-react";
@@ -46,6 +46,12 @@ export function QuickAddPopup({
 }) {
   const t = useTranslations("cosmic");
   const fileRef = useRef<HTMLInputElement>(null);
+  // Dialog plumbing (FEAT-SMO F6): a labelled, focus-trapped, ESC-closable modal
+  // — matching the sibling EventModal's standard so the two dialogs are
+  // consistent and keyboard/SR-operable.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const firstFieldRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
   // Date is fixed by the click; time is editable (defaults to the clicked time).
   const at = new Date(atISO);
@@ -68,6 +74,40 @@ export function QuickAddPopup({
   const uploading = items.some((i) => i.status === "uploading");
   const persistedIds = items.filter((i) => i.status === "persisted").map((i) => i.publicId!);
   const canSave = !uploading && !submitting && (note.trim().length > 0 || persistedIds.length > 0);
+
+  // Move focus into the dialog on open so keyboard/SR users land inside it.
+  useEffect(() => {
+    firstFieldRef.current?.focus();
+  }, []);
+
+  // ESC closes; Tab is trapped within the dialog (forward + back wrap).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const focusable = root.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [onClose]);
 
   async function onFiles(files: FileList | null) {
     if (!files) return;
@@ -103,23 +143,23 @@ export function QuickAddPopup({
     setError(null);
     // Compose the absolute instant from the clicked date + the (editable) time.
     const occurredOn = new Date(`${atISO.slice(0, 10)}T${time}:00.000Z`).toISOString();
-    // Fold a typed place into the note so it's preserved even though the event
-    // model only stores free-text + coordinates (no separate place field).
-    const composedNote = place.trim()
-      ? `${note.trim()}${note.trim() ? "\n" : ""}📍 ${place.trim()}`.trim()
-      : note.trim();
+    // Structured place: a typed place is stored on its own placeName column
+    // (J2.4) — no longer folded into the note text.
+    const placeName = place.trim() || null;
+    const cleanNote = note.trim() || null;
 
     try {
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          note: composedNote || null,
+          note: cleanNote,
           occurredOn,
           circle,
           legacyConsent: false,
           mediaPublicIds: persistedIds,
           location,
+          placeName,
           submitKey: newUploadKey(),
         }),
       });
@@ -132,12 +172,13 @@ export function QuickAddPopup({
       // Hand the saved event straight back so the rail renders it immediately.
       onSaved({
         id: data.eventId,
-        note: composedNote || null,
+        note: cleanNote,
         occurredOn,
         circle,
         media: persistedIds.map((publicId) => ({ publicId })),
         lat: location?.lat ?? null,
         lng: location?.lng ?? null,
+        placeName,
       });
     } catch {
       setError("save_failed");
@@ -164,43 +205,46 @@ export function QuickAddPopup({
       >
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-sm font-extrabold text-cosmic-ink">{t("quickAddTitle")}</h3>
-            <p className="truncate text-[11px] text-cosmic-muted">
+            <h3 id={titleId} className="text-base font-extrabold text-cosmic-ink">
+              {t("quickAddTitle")}
+            </h3>
+            <p className="truncate text-[13px] text-cosmic-muted">
               {t("quickAddAt")} {dateLabel}
             </p>
           </div>
           <button
+            ref={firstFieldRef}
             type="button"
             onClick={onClose}
             aria-label={t("quickAddCancel")}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-cosmic-border text-cosmic-muted transition-colors hover:bg-cosmic-surface2"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-cosmic-border text-cosmic-muted transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
           >
-            <X className="h-4 w-4" aria-hidden />
+            <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
 
         {/* time */}
         <label className="mb-2 flex items-center gap-2">
-          <span className="w-12 shrink-0 text-[11px] font-bold text-cosmic-muted">{t("quickAddTime")}</span>
+          <span className="w-12 shrink-0 text-[13px] font-bold text-cosmic-muted">{t("quickAddTime")}</span>
           <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-1.5 text-xs tabular-nums text-cosmic-ink focus:outline-none focus:ring-1 focus:ring-cosmic-blue/60"
+            className="min-h-[44px] flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-2 text-sm tabular-nums text-cosmic-ink focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
             data-testid="quick-add-time"
           />
         </label>
 
         {/* place */}
         <label className="mb-2 flex items-center gap-2">
-          <span className="flex w-12 shrink-0 items-center gap-1 text-[11px] font-bold text-cosmic-muted">
-            <MapPin className="h-3 w-3" aria-hidden /> {t("quickAddPlace")}
+          <span className="flex w-12 shrink-0 items-center gap-1 text-[13px] font-bold text-cosmic-muted">
+            <MapPin className="h-3.5 w-3.5" aria-hidden /> {t("quickAddPlace")}
           </span>
           <input
             value={place}
             onChange={(e) => setPlace(e.target.value)}
             placeholder={t("quickAddPlacePlaceholder")}
-            className="flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-1.5 text-xs text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-1 focus:ring-cosmic-blue/60"
+            className="min-h-[44px] flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-2 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
             data-testid="quick-add-place"
           />
         </label>
@@ -212,7 +256,7 @@ export function QuickAddPopup({
           rows={2}
           placeholder={t("quickAddNotePlaceholder")}
           data-testid="quick-add-note"
-          className="mb-2 w-full resize-none rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2.5 py-2 text-xs text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-1 focus:ring-cosmic-blue/60"
+          className="mb-2 w-full resize-none rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2.5 py-2 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
         />
 
         {/* content: media (images / video / audio — any kind, or all) */}
@@ -228,7 +272,7 @@ export function QuickAddPopup({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="mb-2 flex w-full items-center justify-center gap-3 rounded-lg border border-dashed border-cosmic-border py-2 text-[11px] font-bold text-cosmic-muted transition-colors hover:bg-cosmic-surface2 hover:text-cosmic-ink"
+          className="mb-2 flex min-h-[44px] w-full items-center justify-center gap-3 rounded-lg border border-dashed border-cosmic-border py-2 text-[13px] font-bold text-cosmic-muted transition-colors hover:bg-cosmic-surface2 hover:text-cosmic-ink focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
           data-testid="quick-add-media-btn"
         >
           <ImagePlus className="h-4 w-4" aria-hidden />
@@ -267,7 +311,7 @@ export function QuickAddPopup({
         </div>
 
         {error && (
-          <p className="mb-2 text-[11px] font-bold text-rose-400" role="alert">
+          <p className="mb-2 text-[13px] font-bold text-rose-400" role="alert">
             {t("quickAddFailed")}
           </p>
         )}
@@ -278,15 +322,15 @@ export function QuickAddPopup({
             onClick={onSave}
             disabled={!canSave}
             data-testid="quick-add-save"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-l from-cosmic-blue to-cosmic-purple px-3 py-2 text-[11px] font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40"
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-cosmic-blue px-3 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60 disabled:translate-y-0 disabled:opacity-40"
           >
-            {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {submitting ? t("quickAddSaving") : t("quickAddSave")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-cosmic-border px-3 py-2 text-[11px] font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            className="min-h-[44px] rounded-xl border border-cosmic-border px-3 py-2.5 text-sm font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
           >
             {t("quickAddCancel")}
           </button>

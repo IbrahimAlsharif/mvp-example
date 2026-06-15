@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Journey Test — Human Timeline Network (J1–J4) · 2026-06-15</title>
+<style>
+  :root{
+    --bg:#0f1220; --panel:#171a2b; --panel2:#1f2438; --ink:#e8ecf6; --muted:#9aa3c0;
+    --line:#2a3050; --good:#3ddc97; --partial:#ffcf5c; --bad:#ff6b6b; --accent:#7aa2ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans Arabic",sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 22px 80px}
+  h1{font-size:26px;margin:0 0 4px} h2{font-size:20px;margin:34px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  h3{font-size:16px;margin:20px 0 8px;color:var(--accent)}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .card .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .card .v{font-size:15px;margin-top:4px}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:600;font-size:12.5px}
+  .vd{background:rgba(61,220,151,.15);color:var(--good);border:1px solid rgba(61,220,151,.4)}
+  .pv{background:rgba(255,207,92,.13);color:var(--partial);border:1px solid rgba(255,207,92,.4)}
+  .vn{background:rgba(255,107,107,.13);color:var(--bad);border:1px solid rgba(255,107,107,.4)}
+  table{width:100%;border-collapse:collapse;margin:10px 0 6px;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+  .ar{direction:rtl;text-align:right;font-family:"Noto Sans Arabic",sans-serif}
+  code{background:var(--panel2);padding:1px 6px;border-radius:6px;font-size:12.5px;color:#cdd6ff}
+  ul{margin:6px 0 6px 0;padding-left:20px} li{margin:3px 0}
+  .muted{color:var(--muted)} .good{color:var(--good)} .partial{color:var(--partial)} .bad{color:var(--bad)}
+  .imgwrap{margin:10px 0}
+  img{max-width:100%;border:1px solid var(--line);border-radius:10px;display:block}
+  .small{font-size:12.5px}
+  .delta{background:rgba(122,162,255,.1);border:1px solid rgba(122,162,255,.35);border-radius:10px;padding:10px 14px;margin:10px 0}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Journey Test — Human Timeline Network</h1>
+  <p class="sub">Business-value run · J1 → J2 → J3 → J4 (looped, in order) · Web · localhost:3000 (MVP) · 2026-06-15 · Sara journey-test</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Overall</div><div class="v"><span class="pill vd">VALUE DELIVERED</span> ×4</div></div>
+    <div class="card"><div class="k">Platform / Env</div><div class="v">Web · MVP (localhost:3000)</div></div>
+    <div class="card"><div class="k">Account walked</div><div class="v" style="font-size:13px">journey.test.0615@example.com<br/><span class="muted small">freshly signed up + confirmed live</span></div></div>
+    <div class="card"><div class="k">Source of truth</div><div class="v small">UJM r3 · <code>.sara/knowledge/docs/user-journeys/user-journey-map.md</code></div></div>
+  </div>
+
+  <div class="delta">
+    <strong>Headline:</strong> three capabilities the UJM (r3) marked <span class="bad">⚠ not yet implemented</span> are now <span class="good">shipped and verified live</span>:
+    <strong>graph-backed cross-account privacy</strong> (J3), the <strong>connection/family UI</strong> (J3), and <strong>open-format export</strong> (J4).
+    Plus the prior default-date off-by-one (audit F-1) and missing success toast are fixed. No blockers found across J1–J4.
+  </div>
+
+  <div class="panel small">
+    <strong>One environment interruption (not a product defect):</strong> first navigation to <code>/events/new</code> threw a Next.js
+    <code>ChunkLoadError</code> (missing chunk, 404) from a corrupted <code>.next</code> dev build. Recovered by a clean
+    <code>next dev</code> restart (stop → wipe <code>.next</code> → restart). Tracked as an env/tooling risk; excluded from verdicts.
+  </div>
+
+  <!-- ============ J1 ============ -->
+  <h2>J1 — Onboard, import &amp; create first event <span class="pill vd">VALUE DELIVERED</span></h2>
+  <div class="grid">
+    <div class="card"><div class="k">Persona</div><div class="v">New invited pilot user (all personas; Elderly most at-risk)</div></div>
+    <div class="card"><div class="k">Business goal</div><div class="v">Activation — populated timeline + first saved event</div></div>
+    <div class="card"><div class="k">Success signal</div><div class="v">First event persists server-side &amp; renders with explicit confirmation</div></div>
+    <div class="card"><div class="k">Map status</div><div class="v"><span class="good">verified</span> · first-run learned</div></div>
+  </div>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Invite signup page</td><td><span class="pill vd">VALUE</span></td><td>Honest "closed invite-only beta" copy; Google SSO + sign-in link. Trust at entry.</td></tr>
+    <tr><td>Submit email + password</td><td><span class="pill vd">VALUE</span></td><td class="ar">"أرسلنا رابط تأكيد إلى بريدك الإلكتروني" — account created, confirm token issued.</td></tr>
+    <tr><td>Confirm via email link</td><td><span class="pill vd">VALUE</span></td><td>Auto-session + redirect to <code>/timeline?welcome=1</code> — no second sign-in.</td></tr>
+    <tr><td>Empty guided timeline</td><td><span class="pill vd">VALUE</span></td><td class="ar">"اضغط على الخط الزمني لإضافة أول حدث" + Add/Import/Export CTAs. Cold-start mitigated.</td></tr>
+    <tr><td>Write first memory</td><td><span class="pill vd">VALUE</span></td><td>Date pre-filled <strong>2026-06-15 (local-correct)</strong>; circle defaults Me Only; Save gated on content.</td></tr>
+    <tr><td>Save → event on rail</td><td><span class="pill vd">VALUE</span></td><td>Explicit success status; node on rail. <strong>DB-confirmed:</strong> circle=ME_ONLY, date local, note verbatim.</td></tr>
+  </table>
+  <div class="imgwrap"><img src="../.sara/journeys/j1-onboard-first-event/runs/business/web/20260615T053800Z/timeline-activated.png" alt="J1 activated timeline" /></div>
+  <p class="small muted"><strong>Advisories:</strong> favicon 404 (cosmetic); no distinct <code>?welcome=1</code> celebration / session-1 revisit nudge (UJM J1.9 still ⚠); bulk dated import + EXIF backfill not exercised.</p>
+
+  <!-- ============ J2 ============ -->
+  <h2>J2 — Capture a life event <span class="pill vd">VALUE DELIVERED</span></h2>
+  <div class="grid">
+    <div class="card"><div class="k">Persona</div><div class="v">Parents / Family Archivists</div></div>
+    <div class="card"><div class="k">Path tested</div><div class="v">Click-on-timeline <strong>quick-add</strong></div></div>
+    <div class="card"><div class="k">Success signal</div><div class="v">Persists + node appears; place folds as 📍; circle honored</div></div>
+    <div class="card"><div class="k">Map status</div><div class="v"><span class="good">verified</span></div></div>
+  </div>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Click empty rail point</td><td><span class="pill vd">VALUE</span></td><td class="ar">quick-add dialog, date pre-filled "في الاثنين، 15 يونيو 2026" — position→date mapping correct.</td></tr>
+    <tr><td>Write note + place</td><td><span class="pill vd">VALUE</span></td><td>Save disabled until content; place accepted as free text.</td></tr>
+    <tr><td>Choose Family circle</td><td><span class="pill vd">VALUE</span></td><td>Default Me Only; switching to Family live-announced via status.</td></tr>
+    <tr><td>Save</td><td><span class="pill vd">VALUE</span></td><td>Node renders immediately (no redirect) + detail popup. <strong>DB:</strong> circle=FAMILY, place folded as <code>\n📍 حديقة الحي</code>.</td></tr>
+  </table>
+  <div class="imgwrap"><img src="../.sara/journeys/j2-capture-event/runs/business/web/20260615T053800Z/quickadd-rail.png" alt="J2 quick-add rail with two events" /></div>
+  <p class="small muted"><strong>Advisories:</strong> quick-add has no separate success toast (detail popup serves as confirmation); place is free-text only (no structured column). Media/voice + EXIF GPS not exercised.</p>
+
+  <!-- ============ J3 ============ -->
+  <h2>J3 — Set privacy &amp; manage Circles <span class="pill vd">VALUE DELIVERED</span> <span class="small muted">(with a documented end-to-end UI gap)</span></h2>
+  <div class="grid">
+    <div class="card"><div class="k">Persona</div><div class="v">Parents / Multi-Generation Families</div></div>
+    <div class="card"><div class="k">Business goal</div><div class="v">Control who sees each memory — graph-backed</div></div>
+    <div class="card"><div class="k">Success signal</div><div class="v">Circle changes persist + cross-account visibility correct by tier</div></div>
+    <div class="card"><div class="k">Map status</div><div class="v"><span class="good">verified</span></div></div>
+  </div>
+  <div class="delta small"><strong>Major positive delta:</strong> UJM r3 said the connection UI and graph read-path were <span class="bad">not yet implemented</span> (own-events-only feed). <span class="good">Both are now shipped:</span> timeline reads via <code>listVisibleEvents</code> (graph-aware) and a real <code>/family</code> connections UI exists.</div>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Event detail → circle + editor</td><td><span class="pill vd">VALUE</span></td><td>Circle badge + inline 3-radio editor with plain-language descriptions.</td></tr>
+    <tr><td>Change Me Only → Family</td><td><span class="pill vd">VALUE</span></td><td class="ar">Live status + explicit "تطبيق التغيير" — confirm-before-commit (not silent auto-save).</td></tr>
+    <tr><td>Apply change</td><td><span class="pill vd">VALUE</span></td><td><strong>DB:</strong> circle flipped ME_ONLY → FAMILY, durable. No accidental pre-Apply commit.</td></tr>
+    <tr><td>Manage Family (/family)</td><td><span class="pill vd">VALUE</span></td><td>Invite-by-email + tier selector (Family / General), pending + members sections. Accurate labels.</td></tr>
+    <tr><td>Cross-account visibility oracle</td><td><span class="pill vd">VALUE</span></td><td>See table below — correct by construction, no over-return.</td></tr>
+  </table>
+  <h3>Visibility oracle (faithful replication of shipped <code>listVisibleEvents</code>)</h3>
+  <table>
+    <tr><th>Viewer</th><th>Tier</th><th>Author events seen</th><th>Expected</th><th>Result</th></tr>
+    <tr><td>stranger</td><td>none</td><td>0</td><td>0</td><td class="good">HOLD</td></tr>
+    <tr><td>viewer A</td><td>FAMILY</td><td>2 (FAMILY)</td><td>2</td><td class="good">HOLD</td></tr>
+    <tr><td>viewer B</td><td>GENERAL</td><td>0</td><td>0 (no PUBLIC events)</td><td class="good">HOLD</td></tr>
+  </table>
+  <div class="imgwrap"><img src="../.sara/journeys/j3-set-privacy/runs/business/web/20260615T053800Z/family-connections.png" alt="J3 family connections UI" /></div>
+  <p class="small partial"><strong>Reservation (why "with a gap"):</strong> not driven this run — a full two-live-browser invite → accept → cross-session feed render, and tier-change/revoke propagation timing. Lib + API + UI + query each proven; the live two-session handshake is the remaining verification.</p>
+
+  <!-- ============ J4 ============ -->
+  <h2>J4 — Browse timeline &amp; export <span class="pill vd">VALUE DELIVERED</span></h2>
+  <div class="grid">
+    <div class="card"><div class="k">Persona</div><div class="v">Multi-Generation Families / Elderly</div></div>
+    <div class="card"><div class="k">Business goal</div><div class="v">Re-experience past events + take everything with you</div></div>
+    <div class="card"><div class="k">Success signal</div><div class="v">No-drift zoom; detail opens; complete open-format export</div></div>
+    <div class="card"><div class="k">Map status</div><div class="v"><span class="good">verified</span></div></div>
+  </div>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Events render on rail</td><td><span class="pill vd">VALUE</span></td><td>Both June-2026 events as nodes on NOW-centered rail.</td></tr>
+    <tr><td>Zoom window</td><td><span class="pill vd">VALUE</span></td><td class="ar">"شهر" → span "± 9 شهر" → "± 3 شهر", ticks re-scaled, events stay at correct instant — no drift.</td></tr>
+    <tr><td>Filter by circle</td><td><span class="pill vd">VALUE</span></td><td>Me Only → 0 (both are Family); Family → both. Genuinely narrows. (Multi-select toggle semantics — minor a11y note.)</td></tr>
+    <tr><td>Open event → detail</td><td><span class="pill vd">VALUE</span></td><td>Full detail popup (verified live in J2/J3).</td></tr>
+    <tr><td>Export everything</td><td><span class="pill vd">VALUE</span></td><td>200 attachment; open format v1; <strong>eventCount=2 == DB</strong>; manifest + circle + consent flags. Portability promise backed.</td></tr>
+  </table>
+  <div class="imgwrap"><img src="../.sara/journeys/j4-browse-timeline/runs/business/web/20260615T053800Z/timeline-zoom.png" alt="J4 timeline zoomed to month window" /></div>
+  <p class="small muted"><strong>Advisories:</strong> circle-filter pressed-state could mislead assistive tech; export with media present not exercised (0 media on this account); hover readout + far-pan not deeply tested.</p>
+
+  <!-- ============ Cross-journey ============ -->
+  <h2>Regression vs prior runs</h2>
+  <p class="small">Prior business runs exist for J2 (20260614 functional+ux, 20260615 empty) and site-audit-derived J1/J3/J4 folders. No prior run carried a per-step <em>business-value</em> verdict to diff for J1/J3/J4 — <strong>this is the first comparable business run</strong> for those three; no regression baseline yet. For J2, the prior functional findings (idempotency, circle-enum, mass-assignment, injection — all HOLD) are unchanged; this run adds the quick-add path. <span class="good">No step regressed.</span> Positive deltas: audit F-1 (default date), success toast, and J3/J4 "not implemented" items all moved forward.</p>
+
+  <h2>Business risks &amp; recommended next actions</h2>
+  <ul>
+    <li><span class="partial">J3 end-to-end:</span> run a two-live-session invite→accept→feed test and revoke/tier-change propagation timing to fully retire the cross-account exposure risk.</li>
+    <li><span class="partial">Export integrity with media:</span> verify media bytes/links are complete for accounts that actually have media (legacy/portability promise).</li>
+    <li><span class="muted">Activation tail:</span> build the session-1 "revisit" nudge (UJM J1.9) so the "come back" half of the bet starts in the first session.</li>
+    <li><span class="muted">Env hygiene:</span> avoid <code>next build</code> against a running <code>next dev</code>; clean-restart <code>.next</code> after any build to prevent ChunkLoadError.</li>
+    <li><span class="muted">A11y polish:</span> clarify circle-filter pressed-state semantics for screen readers.</li>
+  </ul>
+
+  <div class="foot">
+    Journey folders: <code>.sara/journeys/{j1-onboard-first-event,j2-capture-event,j3-set-privacy,j4-browse-timeline}/</code> ·
+    Run id: <code>20260615T053800Z</code> · Each journey has <code>journey.md</code> (source of truth), <code>maps/web.yaml</code> (verified locator map), and <code>runs/business/web/&lt;ts&gt;/functional.md</code>.
+    Verdicts are backed by live UI walks + server-side DB/API oracles, not page-load alone.
+  </div>
+
+</div>
+</body>
+</html>

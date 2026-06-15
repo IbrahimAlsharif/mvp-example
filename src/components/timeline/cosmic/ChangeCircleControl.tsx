@@ -15,7 +15,14 @@ import { CircleSelector } from "@/components/CircleSelector";
  * Accessibility: reuses CircleSelector (radio group + circle-state live region),
  * an assertive error region, and a polite success status (US-0.4 AC-6/AC-9/AC-10).
  */
-const RANK: Record<PrivacyCircle, number> = { ME_ONLY: 0, FAMILY: 1, PUBLIC_UNLISTED: 2 };
+// Reach ordering for downgrade detection. PUBLIC (any signed-in user) is wider
+// reach than PUBLIC_UNLISTED (link-holders only), so it ranks highest.
+const RANK: Record<PrivacyCircle, number> = {
+  ME_ONLY: 0,
+  FAMILY: 1,
+  PUBLIC_UNLISTED: 2,
+  PUBLIC: 3,
+};
 
 export function ChangeCircleControl({
   eventId,

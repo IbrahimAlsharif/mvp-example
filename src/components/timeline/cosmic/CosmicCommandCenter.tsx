@@ -21,10 +21,13 @@ const EventMap = dynamic(() => import("../EventMap"), {
   ),
 });
 
+// RGB triplets matching the redefined light cosmic-* tokens so the filter pills'
+// tinted fill + text stay legible on the white surface.
 const CIRCLES: { key: PrivacyCircle; labelKey: string; glow: string }[] = [
-  { key: "FAMILY", labelKey: "family", glow: "56,189,248" },
-  { key: "PUBLIC_UNLISTED", labelKey: "public_unlisted", glow: "168,85,247" },
-  { key: "ME_ONLY", labelKey: "me_only", glow: "251,191,36" },
+  { key: "FAMILY", labelKey: "family", glow: "37,99,235" },
+  { key: "PUBLIC_UNLISTED", labelKey: "public_unlisted", glow: "124,58,237" },
+  { key: "PUBLIC", labelKey: "public", glow: "16,185,129" },
+  { key: "ME_ONLY", labelKey: "me_only", glow: "234,88,12" },
 ];
 
 // Interest galaxies — PRESENTATIONAL SCAFFOLD (no data model for interests).
@@ -45,10 +48,12 @@ const SHOW_SCAFFOLD_UI = process.env.NEXT_PUBLIC_SHOW_SCAFFOLD_UI === "true";
 export function CosmicCommandCenter({
   events,
   ownerName,
+  ownerAvatar,
   nowISO,
 }: {
   events: EventVM[];
   ownerName: string;
+  ownerAvatar: string;
   nowISO: string;
 }) {
   const t = useTranslations("cosmic");
@@ -64,6 +69,9 @@ export function CosmicCommandCenter({
   const [localEvents, setLocalEvents] = useState<EventVM[]>(events);
   // The instant + anchor the user clicked on the rail; non-null opens the popup.
   const [quickAdd, setQuickAdd] = useState<{ atISO: string; anchor: { xPct: number; up: boolean } } | null>(null);
+  // Transient success toast shown after a quick-add save (parity with the
+  // full-form `?saved=1` confirmation; clears itself after a few seconds).
+  const [toast, setToast] = useState<string | null>(null);
 
   const filtered = useMemo(() => applyFilters(localEvents, filters), [localEvents, filters]);
   const located = useMemo(() => filtered.filter((e) => e.lat != null && e.lng != null), [filtered]);
@@ -90,12 +98,32 @@ export function CosmicCommandCenter({
   function onQuickAddSaved(saved: EventVM) {
     setLocalEvents((prev) => [saved, ...prev]);
     setQuickAdd(null);
-    // Show the freshly-saved event in its popup so the user sees it land.
+    // Explicit success confirmation (parity with the full-form save), then show
+    // the freshly-saved event in its popup so the user sees it land.
+    setToast(t("saveAnnounce"));
     setOpenId(saved.id);
   }
 
+  // Auto-dismiss the success toast a few seconds after it appears.
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(id);
+  }, [toast]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col" dir="rtl">
+      {/* Transient success toast after a quick-add save (aria-live for SR users). */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="quick-add-toast"
+          className="pointer-events-none fixed inset-x-0 top-4 z-50 mx-auto w-fit max-w-[90vw] rounded-full bg-cosmic-teal/95 px-4 py-2 text-center text-[13px] font-bold text-cosmic-bg shadow-glow-teal"
+        >
+          ✓ {toast}
+        </div>
+      )}
       {/* Content row fills the space between the page header and the toolbar; on
           large screens it never scrolls the page — columns scroll internally. */}
       <div
@@ -110,9 +138,14 @@ export function CosmicCommandCenter({
             <div className="relative h-20 w-20">
               <span className="pulse-ring" />
               <span className="pulse-ring [animation-delay:1.2s]" />
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cosmic-blue to-cosmic-purple text-2xl font-black text-white ring-2 ring-cosmic-teal/60">
-                {ownerName.slice(0, 1).toUpperCase()}
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element -- local static SVG; next/image not configured */}
+              <img
+                src={ownerAvatar}
+                alt=""
+                width={80}
+                height={80}
+                className="h-20 w-20 rounded-full object-cover ring-2 ring-cosmic-teal/60"
+              />
             </div>
             <p className="mt-2 text-xs font-bold text-cosmic-teal">{t("meNow")}</p>
             <p className="text-base font-extrabold text-cosmic-ink">{ownerName}</p>
@@ -159,7 +192,7 @@ export function CosmicCommandCenter({
               <span className="text-[11px] text-cosmic-muted">{t("lifeMapSub")}</span>
             </div>
             <div className="min-h-0 flex-1 overflow-hidden rounded-xl">
-              <EventMap events={located} theme="cosmic" height="100%" />
+              <EventMap events={located} theme="light" height="100%" />
             </div>
           </div>
         </main>
@@ -188,13 +221,22 @@ export function CosmicCommandCenter({
       {/* ── Bottom toolbar (in-flow, fixed height) ── */}
       <div className="shrink-0 border-t border-cosmic-border bg-cosmic-bg/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-3 px-4 py-2.5" dir="rtl">
-          {/* circle filters */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-cosmic-muted">{t("circleAll")}:</span>
+          {/* circle filters — multi-select: each circle toggles independently;
+              "All" clears the selection. Grouped + labelled so assistive tech
+              announces it as a multi-select filter rather than peer toggles. */}
+          <div
+            role="group"
+            aria-label={t("circleFilterLabel")}
+            className="flex items-center gap-1.5"
+          >
+            <span className="text-[11px] text-cosmic-muted" aria-hidden>
+              {t("circleAll")}:
+            </span>
             <button
               type="button"
               onClick={() => setFilters((f) => ({ ...f, circles: new Set() }))}
               aria-pressed={allActive}
+              aria-label={t("circleAllHint")}
               className={`rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
                 allActive ? "bg-cosmic-amber/20 text-cosmic-amber ring-1 ring-cosmic-amber/60" : "text-cosmic-muted hover:text-cosmic-ink"
               }`}

@@ -4,7 +4,6 @@ import LifelineLogo from "./_components/LifelineLogo";
 
 export default function Home() {
   const t = useTranslations("app");
-  const tn = useTranslations("nav");
   const ta = useTranslations("auth");
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16 text-center">
@@ -32,7 +31,7 @@ export default function Home() {
           href="/signin"
           className="rounded-xl bg-accent-gradient px-8 py-3.5 font-bold text-white shadow-accent transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0"
         >
-          {tn("timeline")}
+          {ta("signinTitle")}
         </Link>
         <Link
           href="/signup"

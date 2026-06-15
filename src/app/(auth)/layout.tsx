@@ -19,7 +19,7 @@ function Brand() {
   return (
     <div className="mb-7 text-center">
       <div className="mx-auto mb-3 flex h-14 w-14 animate-float items-center justify-center rounded-2xl bg-brand-gradient text-2xl text-white shadow-brand">
-        ⏳
+        📖
       </div>
       <h2 className="bg-brand-gradient bg-clip-text text-lg font-extrabold text-transparent">
         {t("name")}

@@ -14,7 +14,7 @@ import { emit } from "@/lib/telemetry";
  * server-validated request — no stale grant. The memory is never deleted or
  * locked and the owner keeps access throughout (G2/AC-9).
  */
-const Body = z.object({ circle: z.enum(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED"]) });
+const Body = z.object({ circle: z.enum(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED", "PUBLIC"]) });
 
 export async function PATCH(
   req: NextRequest,

@@ -15,6 +15,7 @@ export const CIRCLE_CONSENT_DEFAULT: Record<PrivacyCircle, LegacyConsent> = {
   ME_ONLY: "UNSET",
   FAMILY: "UNSET",
   PUBLIC_UNLISTED: "UNSET",
+  PUBLIC: "UNSET",
 };
 
 /**

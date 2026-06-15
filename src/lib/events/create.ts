@@ -27,6 +27,8 @@ export type CreateEventInput = {
   mediaPublicIds: string[];
   submitKey: string;
   location?: { lat: number; lng: number } | null;
+  /** Structured free-text place (J2.4); stored on its own column, not folded into the note. */
+  placeName?: string | null;
 };
 
 export type CreateEventResult =
@@ -78,6 +80,7 @@ export async function createEvent(input: CreateEventInput): Promise<CreateEventR
           submitKey: input.submitKey,
           locationLat: input.location?.lat ?? null,
           locationLng: input.location?.lng ?? null,
+          placeName: input.placeName?.trim() ? input.placeName.trim() : null,
         },
       });
 
@@ -132,12 +135,16 @@ export async function listOwnEvents(accountId: string) {
  *   - own events:                 every circle (owner sees all of their own)
  *   - FAMILY-tier connection:     the author's FAMILY + PUBLIC_UNLISTED events
  *   - GENERAL-tier connection:    the author's PUBLIC_UNLISTED events only
- *   - no connection:              nothing
+ *   - PUBLIC (any author):        visible to any authenticated viewer, no
+ *                                 connection required
+ *   - no connection:              own events + any author's PUBLIC
  *   - ME_ONLY:                    NEVER shared, regardless of any connection
  *
  * The viewer's own ME_ONLY/FAMILY/PUBLIC events are always included; another
  * account's ME_ONLY can never enter the result set by construction (it is never
- * added to any OR branch below).
+ * added to any OR branch below). PUBLIC is the one cross-account branch with no
+ * accountId filter — reachable only because this path runs for a logged-in
+ * viewer (anonymous requests never call it).
  */
 /**
  * PURE: build the visibility OR-clauses from the viewer id and their tiered
@@ -161,6 +168,12 @@ export function visibilityClauses(
   if (publicAuthorIds.length > 0) {
     or.push({ accountId: { in: publicAuthorIds }, circle: "PUBLIC_UNLISTED" });
   }
+  // PUBLIC events are visible to any AUTHENTICATED viewer regardless of
+  // connection — the only branch with no accountId constraint. `viewerAccountId`
+  // is non-null here (this path runs for a logged-in viewer), so anonymous
+  // discovery is impossible by construction: a logged-out request never reaches
+  // listVisibleEvents. ME_ONLY/FAMILY of other accounts remain unreachable.
+  or.push({ circle: "PUBLIC" });
   return or;
 }
 

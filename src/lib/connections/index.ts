@@ -134,6 +134,23 @@ export async function pendingIncoming(accountId: string): Promise<Connection[]> 
 }
 
 /**
+ * Pending OUTGOING requests `accountId` has sent (US-3.5 AC-5): edges still
+ * PENDING that this account requested. Lets the inviter see that a sent invite
+ * is awaiting the recipient's response — the "did it work?" feedback the flow
+ * was missing.
+ */
+export async function pendingOutgoing(accountId: string): Promise<Connection[]> {
+  return prisma.connection.findMany({
+    where: {
+      status: "PENDING",
+      requestedById: accountId,
+      OR: [{ accountAId: accountId }, { accountBId: accountId }],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
  * Decline a pending request (US-3.5 AC-5). Only the recipient (not the
  * requester) may decline; declining deletes the edge so the requester may later
  * re-invite (a re-invite is a fresh request, AC-8). Returns true if an edge was

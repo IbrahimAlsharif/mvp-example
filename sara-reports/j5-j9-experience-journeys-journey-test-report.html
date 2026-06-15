@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Journey Test — J5/J6/J7/J9 (Experience Journeys) — Human Timeline Network</title>
+<style>
+  :root{--bg:#0f1117;--card:#1a1d27;--ink:#e8eaf0;--muted:#9aa3b2;--line:#2a2f3d;
+    --green:#34d399;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;--accent:#a78bfa;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  h2{font-size:20px;margin:38px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{font-size:16px;margin:22px 0 8px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .grid{display:grid;gap:14px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .cols-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:760px){.cols-2,.cols-4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;color:var(--muted);font-size:14px}
+  .meta b{color:var(--ink);font-weight:600}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px}
+  .vd{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.4)}
+  .pv{background:rgba(251,191,36,.15);color:var(--amber);border:1px solid rgba(251,191,36,.4)}
+  .vn{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.4)}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+  code{background:#0b0d13;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--blue)}
+  .big{font-size:30px;font-weight:800;line-height:1}
+  .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.4px;margin-top:6px}
+  .crit{border-left:3px solid var(--accent);padding-left:12px;margin:10px 0}
+  .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)}
+  ul{margin:6px 0 6px 0;padding-left:20px} li{margin:3px 0}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--line);padding-top:14px}
+  .tag{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Journey Test — Experience Journeys (J5 · J6 · J7 · J9)</h1>
+  <p class="sub">Human Timeline Network · business-value test · web · <code>localhost:3000</code> (mvp) · 2026-06-15</p>
+
+  <div class="card">
+    <div class="meta">
+      <span>Journey folders</span><span><b>.sara/journeys/{j5-life-playback, j6-future-capsule, j7-invite-family, j9-connect-family}/</b></span>
+      <span>User journey map</span><span>.sara/knowledge/docs/user-journeys/user-journey-map.md (J5/J6/J7/J9)</span>
+      <span>Persona class</span><span><b>member</b> (Multi-Generation Family / Legacy Builder)</span>
+      <span>Test identities</span><span>Alice — 5 events, mixed circles (2 ME_ONLY, 2 FAMILY, 1 PUBLIC) · Bob — 0 events</span>
+      <span>Locator maps</span><span><b>verified</b> (first-run learning) · heals: new maps authored this run</span>
+    </div>
+  </div>
+
+  <h2>Overall verdict</h2>
+  <div class="grid cols-4">
+    <div class="card"><span class="pill vd">VALUE DELIVERED</span><div class="lbl">J5 Life Playback</div></div>
+    <div class="card"><span class="pill vd">VALUE DELIVERED</span><div class="lbl">J6 Future Capsule</div></div>
+    <div class="card"><span class="pill pv">PARTIAL VALUE</span><div class="lbl">J7 Invite family</div></div>
+    <div class="card"><span class="pill vd">VALUE DELIVERED</span><div class="lbl">J9 Connect (graph)</div></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <p style="margin:0 0 8px"><b>Headline.</b> The dangerous, load-bearing parts of these four journeys — cross-account privacy, capsule timing trust, and revoke — are <span class="ok">correct by construction, enforced server-side</span>. The biggest <b>business</b> problem is not correctness; it is <b>reach and feedback</b>: three shipped features have <span class="warn">no navigation entry point</span>, and J7's invite loop gives the user <span class="warn">no confirmation it worked</span>.</p>
+    <p style="margin:0"><b>Doc correction (high value):</b> the UJM r3 says the Connections graph "has no UI and no read-path yet (timeline shows own events)". <span class="ok">This is now stale</span> — the graph is fully wired into the events read-path, playback, and a <code>/family</code> UI. The #1 doc-vs-code follow-up is resolved in code.</p>
+  </div>
+
+  <h2>Cross-journey risk — discoverability</h2>
+  <div class="card crit">
+    The post-sign-in home (<code>/timeline</code>) exposes only <b>Export · Import · Add event</b>. There is <b>zero navigation</b> to Playback, Future Capsules, or Family/Connections. All three new MVP-completion features are reachable by direct URL only.
+    <br/><br/><b>Business impact:</b> a feature no user can find delivers no value. J5/J6/J7/J9 are correct but effectively invisible to the persona. <b>Single highest-leverage fix:</b> add a nav/menu surfacing these four destinations.
+  </div>
+
+  <h2>Value table</h2>
+  <table>
+    <tr><th>Journey</th><th>Persona value</th><th>Speed to value</th><th>Trust / freshness</th><th>Next action clarity</th><th>Operational risk</th></tr>
+    <tr>
+      <td><b>J5 Playback</b></td>
+      <td class="ok">Real — magic moment plays</td>
+      <td class="ok">&lt;30ms start (« 3s)</td>
+      <td class="ok">Airtight per-viewer privacy</td>
+      <td class="warn">Cannot find the feature</td>
+      <td class="ok">Low (privacy proven)</td>
+    </tr>
+    <tr>
+      <td><b>J6 Capsule</b></td>
+      <td class="ok">Real — seals to future</td>
+      <td class="ok">Fast seal</td>
+      <td class="warn">Strong invariant; weak UI feedback</td>
+      <td class="warn">No error on bad date; recipient hidden</td>
+      <td class="ok">Low (content locked pre-unlock)</td>
+    </tr>
+    <tr>
+      <td><b>J7 Invite</b></td>
+      <td class="warn">Partial — works but opaque</td>
+      <td class="ok">Instant edge</td>
+      <td class="warn">No outgoing-invite feedback</td>
+      <td class="bad">Accept looks failed (stale UI)</td>
+      <td class="ok">Low (revoke honest + non-destructive)</td>
+    </tr>
+    <tr>
+      <td><b>J9 Connect</b></td>
+      <td class="ok">Real — shared timeline appears</td>
+      <td class="ok">Immediate propagation</td>
+      <td class="ok">Strongest — invariant holds</td>
+      <td class="warn">Members shown without identity</td>
+      <td class="ok">Low (no leak, no data loss)</td>
+    </tr>
+  </table>
+
+  <h2>J5 — Life Playback <span class="pill vd">VALUE DELIVERED</span></h2>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Open /playback</td><td class="ok">VALUE</td><td>Span controls (year/decade/whole-life), figure, pause, scrubber, counter.</td></tr>
+    <tr><td>Choose span</td><td class="ok">VALUE</td><td>API 6–29ms. year=3 (last-12m), decade/life=5. Chronological (AC-1, AC-2).</td></tr>
+    <tr><td>Pause / scrub</td><td class="ok">VALUE</td><td>Slider tracks position; auto-advance (AC-3).</td></tr>
+    <tr><td><b>Per-viewer privacy (AC-5/6)</b></td><td class="ok">VALUE</td><td>Bob = 0 frames. Owner-param injection (accountId/ownerId/owner/viewerId) → 0 frames. <b>No over-return, no ME_ONLY leak.</b></td></tr>
+    <tr><td>Empty span</td><td class="ok">VALUE</td><td>Coherent "no events in this range" — no error, no leak (AC-7).</td></tr>
+  </table>
+  <p class="tag">Not tested live: share-link lifecycle (AC-6/10), mid-playback circle-change propagation (AC-9), media rendering & long-span stalls (AC-4), RTL axis review (AC-8).</p>
+
+  <h2>J6 — Future Capsule <span class="pill vd">VALUE DELIVERED</span></h2>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Open /capsules</td><td class="ok">VALUE</td><td>Type (msg/video/letter/goal/plan), Content, Recipient (me-only/family — no death option, G9), date, Seal, pending list, honest copy.</td></tr>
+    <tr><td>Past/today rejected</td><td class="warn">PARTIAL</td><td>Server 422 not_future for past <b>and today</b> (zero pre-D tolerance) ✓. <b>But UI shows no error message</b> on a bad-date seal (AC-3 unmet).</td></tr>
+    <tr><td>Seal future</td><td class="ok">VALUE</td><td>2027 → 201, status SEALED, pending (AC-5).</td></tr>
+    <tr><td>Pending shows config</td><td class="warn">PARTIAL</td><td>Row = type · date; <b>recipient omitted</b> (AC-8 — misconfiguration not visible).</td></tr>
+    <tr><td>Pre-unlock protection</td><td class="ok">VALUE</td><td>Content not in any read path; direct fetch 405/404 (AC-6 negative).</td></tr>
+    <tr><td>Cancel</td><td class="ok">VALUE</td><td>Explicit honest confirm; withdrawn; list empty (AC-11, G2).</td></tr>
+  </table>
+  <p class="tag">Not tested live: on-date unlock within window/never-before (AC-6 positive — needs clock change), timezone/DST (AC-7), no-valid-recipient undeliverable (AC-10), export inclusion (AC-12).</p>
+
+  <h2>J7 — Invite family <span class="pill pv">PARTIAL VALUE</span></h2>
+  <table>
+    <tr><th>Step</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr><td>Open /family</td><td class="ok">VALUE</td><td>Invite form (email + FAMILY/GENERAL tier), incoming-requests, members sections.</td></tr>
+    <tr><td>Send invite</td><td class="warn">PARTIAL</td><td>Privacy-preserving status; PENDING edge created. <b>No sent-invitations list</b> — inviter can't see outgoing state (AC-5 unmet).</td></tr>
+    <tr><td>Accept (recipient)</td><td class="warn">PARTIAL</td><td>Edge → ACCEPTED (API). <b>Members list stale until manual reload</b> — looks like it failed.</td></tr>
+    <tr><td>Scoped visibility on join</td><td class="ok">VALUE</td><td>Member sees Family+Public only, never Me-Only (AC-3/4 — see J9).</td></tr>
+    <tr><td>Revoke member</td><td class="ok">VALUE</td><td>Honest confirm; access cut immediately incl. Public; memories intact (AC-9/9b/9c, G2).</td></tr>
+  </table>
+  <p class="tag">Not tested live: declined state to inviter (AC-6), single-use/account-bound forwarded-link defense (AC-2b — UI invites by email), expired/invalid-link message (AC-7), re-invite (AC-8).</p>
+
+  <h2>J9 — Connect family (social graph) <span class="pill vd">VALUE DELIVERED</span> — strongest result</h2>
+  <table>
+    <tr><th>Invariant</th><th>Result</th><th>Evidence</th></tr>
+    <tr><td>Pending → no access</td><td class="ok">PASS</td><td>While PENDING, Bob saw 0 of Alice's events.</td></tr>
+    <tr><td>FAMILY sees FAMILY + PUBLIC</td><td class="ok">PASS</td><td>Bob saw 2 FAMILY + 1 PUBLIC across events read-path, playback, AND timeline UI.</td></tr>
+    <tr><td>ME_ONLY never shared</td><td class="ok">PASS</td><td>2 ME_ONLY events never appeared at any tier, any path.</td></tr>
+    <tr><td>GENERAL sees PUBLIC only</td><td class="ok">PASS</td><td>FAMILY→GENERAL downgrade → only PUBLIC remained; FAMILY dropped immediately.</td></tr>
+    <tr><td>Tier-change propagation</td><td class="ok">PASS</td><td>Immediate on next access — no stale exposure.</td></tr>
+    <tr><td>Remove revokes all</td><td class="ok">PASS</td><td>Post-remove Bob saw 0 events incl. PUBLIC; Alice's 5 intact (G2).</td></tr>
+    <tr><td>Over-return injection</td><td class="ok">PASS (safe)</td><td>owner/account/viewer params ignored → 0 frames for unconnected viewer.</td></tr>
+    <tr><td>Canonical pair / recipient-only accept</td><td class="ok">PASS</td><td>DB: accountAId(Alice) &lt; accountBId(Bob), requestedBy=Bob, recipient accepted.</td></tr>
+  </table>
+
+  <h2>Recommended next actions (priority order)</h2>
+  <ol>
+    <li><b>Add navigation</b> to /playback, /capsules, /family from the timeline — unlocks the value of all four journeys (highest leverage, smallest change).</li>
+    <li><b>J7:</b> add a sent/outgoing-invitations list with pending/accepted/declined state (AC-5); refresh the members list after accept (no manual reload).</li>
+    <li><b>J6:</b> show a clear error when an invalid/past/today date is submitted (AC-3); show the recipient/circle on each pending capsule row (AC-8).</li>
+    <li><b>J7/J9:</b> show member/request <b>identity</b> (name/email), not just the tier — you should know who you are granting family access to.</li>
+    <li><b>Update the UJM:</b> flip J9 from "backend only" to "graph wired into read-path + UI" and refresh the per-journey status table.</li>
+    <li>Schedule the not-tested-live items needing clock/second-viewer harnesses: capsule on-date unlock, mid-playback propagation, share-link lifecycle.</li>
+  </ol>
+
+  <h2>Regression vs prior runs</h2>
+  <div class="card">First comparable business run for J5/J6/J7/J9 — no regression baseline yet. (Prior <code>.sara/journeys/jN/runs</code> were stub folders from the site-audit with no business verdicts.)</div>
+
+  <p class="foot">
+    Generated by Sara · journey-test (business-value mode) · 2026-06-15 ·
+    Maps verified · Evidence under <code>.sara/journeys/&lt;slug&gt;/runs/business/web/20260615T054900Z/</code> ·
+    Test data seeded for the run; connection removed at end (memories preserved, G2).
+  </p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J3 Privacy Circles — Deep UX Journey Report</title>
+<style>
+  :root{--navy:#0f172a;--navy2:#1e293b;--gold:#b8961e;--ink:#e2e8f0;--mut:#94a3b8;
+        --risk:#e0803a;--block:#dc2626;--adv:#3b82f6;--good:#16a34a;--card:#16213a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--navy);color:var(--ink);line-height:1.6}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px;color:#fff}
+  h2{font-size:19px;margin:38px 0 12px;color:var(--gold);border-bottom:1px solid #2a3a55;padding-bottom:6px}
+  h3{font-size:15px;margin:18px 0 8px;color:#fff}
+  .sub{color:var(--mut);font-size:14px}
+  .verdict{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid #2a3a55;border-radius:14px;padding:20px 22px;margin:18px 0}
+  .vbadge{font-weight:800;font-size:15px;padding:8px 16px;border-radius:999px;white-space:nowrap}
+  .v-strong{background:rgba(22,163,74,.16);color:#4ade80;border:1px solid var(--good)}
+  .fix{background:rgba(184,150,30,.12);border-right:4px solid var(--gold);padding:12px 16px;border-radius:8px;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:14px}
+  .stat .n{font-size:22px;font-weight:800;color:#fff}
+  .stat .l{font-size:12px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+  th,td{text-align:right;padding:9px 11px;border-bottom:1px solid #2a3a55;vertical-align:top}
+  th{color:var(--gold);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .p-risk{background:rgba(224,128,58,.16);color:var(--risk)}
+  .p-adv{background:rgba(59,130,246,.16);color:#60a5fa}
+  .p-good{background:rgba(22,163,74,.18);color:#4ade80}
+  .meta{background:var(--navy2);border-radius:10px;padding:14px 18px;font-size:13.5px}
+  .meta b{color:#fff}
+  code{background:#0b1120;color:#fbbf24;padding:1px 6px;border-radius:5px;font-size:12.5px}
+  .note{background:#0b1120;border:1px dashed #3a4d6e;border-radius:10px;padding:14px 16px;font-size:13.5px;color:var(--mut)}
+  ul{margin:6px 0;padding-inline-start:20px}
+  .barwrap{background:#0b1120;border-radius:8px;overflow:hidden;height:22px;width:100%;max-width:280px;display:inline-block;vertical-align:middle}
+  .bar{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);display:flex;align-items:center;justify-content:flex-start;padding-inline-start:8px;color:#0b1120;font-weight:800;font-size:12px}
+  .imgrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+  .imgrow figure{margin:0;background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:8px}
+  .imgrow img{width:100%;border-radius:6px;display:block}
+  .imgrow figcaption{font-size:11.5px;color:var(--mut);margin-top:6px}
+  .ok{color:var(--good)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>J3 — Set event privacy &amp; manage Privacy Circles</h1>
+  <div class="sub">Deep UI/UX expert evaluation · journey-ux · web · MVP · 2026-06-15 · FEAT-PWE</div>
+
+  <div class="verdict">
+    <span class="vbadge v-strong">STRONG UX</span>
+    <div>The who-sees-what mental model — J3's core UX risk — is communicated clearly and correctly; the privacy change uses a deliberate confirm step; every surface holds up on desktop, 390px mobile, and RTL. The few risks are polish on an already-good experience.</div>
+  </div>
+  <div class="fix"><b>Single highest-impact fix:</b> add an explicit success confirmation when a privacy change is applied (FJ3-2) — it closes the one status-visibility gap on the trust-critical action and matches the toast J1's save already uses.</div>
+
+  <div class="grid">
+    <div class="stat"><div class="n">34<span style="font-size:14px;color:var(--mut)">/40</span></div><div class="l">Nielsen total (top of healthy band)</div></div>
+    <div class="stat"><div class="n">LOW</div><div class="l">Cognitive load · 3 described options</div></div>
+    <div class="stat"><div class="n ok">PASS</div><div class="l">Privacy editor a11y (modal + native radios)</div></div>
+    <div class="stat"><div class="n">3 / 1</div><div class="l">Findings: risk / advisory</div></div>
+  </div>
+
+  <h2>Run identity</h2>
+  <div class="meta">
+    <b>Persona:</b> parent / family archivist / multi-generation family member controlling who sees each memory<br>
+    <b>Core UX risk:</b> comprehension of who-sees-what (perceived over-sharing from unclear labels)<br>
+    <b>Business goal:</b> control exactly who can see each memory, graph-backed &nbsp;·&nbsp; <b>Persona class:</b> member<br>
+    <b>Surface:</b> event-detail privacy editor + /family Connections UI → archetypes First-timer + A11y + Mobile<br>
+    <b>Journey folder:</b> <code>.sara/journeys/j3-set-privacy/</code> &nbsp;·&nbsp; <b>Map:</b> <code>maps/web.yaml</code> (verified, fingerprint <code>j3-real-20260615</code>; no heal needed)<br>
+    <b>Coverage:</b> desktop 1280 · 390px mobile · ar-RTL (native default) &nbsp;·&nbsp; <b>Account:</b> ux.elderly.0615@example.com (circle flipped ME_ONLY→FAMILY live, verified persisted)
+  </div>
+
+  <h2>Per-step UX read (project persona)</h2>
+  <table>
+    <tr><th>#</th><th>Step</th><th>UX read</th></tr>
+    <tr><td>1</td><td>Event detail → badge + editor</td><td class="ok"><b>Strong.</b> Proper <code>role=dialog</code> + <code>aria-modal</code> + label; focus moves into the dialog. Badge 🔒 أنا فقط prominent. 3 native radios in 70px <code>&lt;label&gt;</code> rows, descriptions contrast 7.1–7.8 / titles 13.8–15.1 (all AA, 14–16px — far better than J1 signup).</td></tr>
+    <tr><td>2</td><td>Select a different circle</td><td><b>Good confirm-before-commit.</b> Live <code>role=status</code> "مستوى الخصوصية المحدد: العائلة"; explicit "تطبيق التغيير" (Apply) appears — staged, not auto-committed. Apply 36px (FJ3-3); no dirty hint (FJ3-4).</td></tr>
+    <tr><td>3</td><td>Apply the change</td><td>Badge → 👪 العائلة, Apply vanishes, DB circle persists ME_ONLY→FAMILY (verified). <b>But no explicit success confirmation</b> (FJ3-2).</td></tr>
+    <tr><td>4</td><td>Manage Family via /family</td><td class="ok"><b>Strong.</b> Native <code>&lt;select&gt;</code> tier picker, label-associated, <b>self-describing options</b> ("العائلة (ترى ذكريات العائلة)" / "عام (يرى الروابط الخاصة فقط)"). Designed empty states; clean h1→h2; sent-invites section now ships. Empty-state contrast 2.52 (FJ3-1).</td></tr>
+  </table>
+
+  <h2>Findings</h2>
+  <table>
+    <tr><th>ID</th><th>Method / criterion</th><th>Finding &amp; fix</th><th>Sev</th></tr>
+    <tr><td><b>FJ3-1</b></td><td>WCAG 1.4.3 / floor contrast · /family</td><td>Empty-state text (all 3 sections) #a3a3a3 on white = <b>2.52</b> (AA needs 4.5), 14px. <b>Same systemic gray as J1's password hint</b> — a project-wide placeholder token. <b>Fix once at token level:</b> ≥#737373.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>FJ3-2</b></td><td>Heuristic 1 visibility of status · apply</td><td>Applying a privacy change gives no explicit success confirmation (only badge change + button vanishing). For a trust action, warrants an explicit "تم تغيير الخصوصية" matching J1's save toast. <b>Fix:</b> success status on Apply.</td><td><span class="pill p-risk">risk · N2</span></td></tr>
+    <tr><td><b>FJ3-3</b></td><td>floor tap-target</td><td>"تطبيق التغيير" Apply button 36px + dialog close 36px — under 44px. Apply is <i>the</i> privacy-commit action. <b>Fix:</b> ≥44px.</td><td><span class="pill p-risk">risk · N2</span></td></tr>
+    <tr><td><b>FJ3-4</b></td><td>Heuristic 6 / first-timer</td><td>A staged change has no explicit "unsaved" indicator beyond the Apply button appearing. <b>Fix:</b> subtle dirty-state hint.</td><td><span class="pill p-adv">advisory · N1</span></td></tr>
+  </table>
+
+  <h2>Scores</h2>
+  <h3>Nielsen heuristic health — 34/40</h3>
+  <div class="barwrap"><div class="bar" style="width:85%">34 / 40 · top of band</div></div>
+  <p class="sub">Strongest: #3 user control (confirm-before-commit + modal focus), #5 error prevention, #6 recognition (descriptive labels communicate who-sees-what). One gap: #1 status — the missing apply-success confirmation (FJ3-2).</p>
+
+  <table>
+    <tr><th>Lens</th><th>Result</th></tr>
+    <tr><td>WCAG AA</td><td><span class="ok">PASS</span> — privacy editor: descriptions/titles AA, <code>aria-modal</code> dialog + focus management, native keyboard-operable radios, label association. <b>FAIL</b> — /family empty-state contrast 2.52 (FJ3-1); sub-44px Apply/close (FJ3-3).</td></tr>
+    <tr><td>Cognitive walkthrough</td><td><span class="ok">All critical-path steps pass all four questions</span> — the privacy decision and Family-management are both discoverable and self-explaining.</td></tr>
+    <tr><td>Cognitive load</td><td><b>LOW</b> — privacy choice is 3 well-structured described options (≤4 floor); /family is a single focused task.</td></tr>
+    <tr><td>AI-slop test</td><td><b>Minimal</b> — only the shared gradient button; no editorial/scaffold tells. Distinctive, intentional.</td></tr>
+    <tr><td>RTL / locale</td><td><span class="ok">PASS</span> — native RTL throughout (dialog + /family mirrored, no untranslated strings, no RTL overlap).</td></tr>
+  </table>
+
+  <h2>Multi-persona stress findings</h2>
+  <table>
+    <tr><th>Archetype</th><th>Result</th></tr>
+    <tr><td>First-timer (clarity)</td><td><span class="ok">Strong</span> — self-describing circle + tier labels make who-sees-what obvious. The one gap: no success confirmation after applying (FJ3-2); no dirty hint (FJ3-4).</td></tr>
+    <tr><td>Accessibility-dependent</td><td><span class="ok">Strong</span> — real modal semantics, focus management, native radios, label association, AA-passing editor text. Gaps: empty-state contrast (FJ3-1), sub-44px Apply/close (FJ3-3).</td></tr>
+    <tr><td>Distracted mobile</td><td><span class="ok">Strong</span> — privacy dialog fits 390px with 70–90px radio rows, no overflow; /family no horizontal scroll, reachable 44px send. Notably better than J1's timeline header.</td></tr>
+  </table>
+
+  <h2>Positives (kept honest)</h2>
+  <ul>
+    <li class="ok">Privacy editor is exemplary for an a11y/trust surface: modal semantics, focus management, native keyboard-operable radios, 70px label rows, AA-passing descriptive labels.</li>
+    <li class="ok">Trust comprehension communicated well — every circle and tier carries a plain-language "who sees what" description, directly defusing J3's dominant risk (mis-set circle from unclear labeling).</li>
+    <li class="ok">Confirm-before-commit on the privacy change prevents accidental exposure on a mis-tap.</li>
+    <li class="ok">Mobile holds up across both surfaces; RTL native and correct; designed empty states; sent-invites section now ships.</li>
+  </ul>
+
+  <h2>Evidence</h2>
+  <div class="imgrow">
+    <figure><img src="../.sara/journeys/j3-set-privacy/runs/ux/web/20260615T063300Z/s1-event-detail-privacy-editor.png" alt="privacy editor"><figcaption>S1 · event-detail privacy editor</figcaption></figure>
+    <figure><img src="../.sara/journeys/j3-set-privacy/runs/ux/web/20260615T063300Z/s2-staged-family-apply-appears.png" alt="apply appears"><figcaption>S2 · staged Family → Apply appears</figcaption></figure>
+    <figure><img src="../.sara/journeys/j3-set-privacy/runs/ux/web/20260615T063300Z/s4-family-connections-desktop.png" alt="family"><figcaption>S4 · /family tier selector (empty-state contrast FJ3-1)</figcaption></figure>
+    <figure><img src="../.sara/journeys/j3-set-privacy/runs/ux/web/20260615T063300Z/s1-privacy-dialog-390px.png" alt="mobile dialog"><figcaption>390px — privacy dialog fits cleanly</figcaption></figure>
+  </div>
+
+  <h2>Verdict &amp; follow-ups</h2>
+  <p><b>STRONG UX.</b> No severity-4/blocking; J3's functional <b>VALUE DELIVERED</b> stands (UX does not flip it). <b>FJ3-1 is shared with J1's F1</b> (placeholder-gray contrast) — fix once at the design-token level to clear both. The live two-account invite→accept→cross-feed handshake and tier-change/revoke propagation remain a business/functional gap (owned by journey-test), not a UX gap.</p>
+  <p class="sub">Filing: per the standing "list then fix" preference, findings are documented here, not auto-filed. AI-slop result and cognitive-load level are reported alongside the verdict, not folded into the band.</p>
+</div>
+</body>
+</html>

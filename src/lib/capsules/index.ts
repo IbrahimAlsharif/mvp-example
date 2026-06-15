@@ -118,6 +118,7 @@ export async function reconcileUndeliverable(ownerAccountId: string, nowMs: numb
     const { family, general } = await acceptedConnectionsByTier(ownerAccountId);
     const hasRecipient =
       c.recipientCircle === "ME_ONLY" || // owner-only "capsule to self"
+      c.recipientCircle === "PUBLIC" || // any registered user — always has an audience
       (c.recipientCircle === "FAMILY" && family.size > 0) ||
       (c.recipientCircle === "PUBLIC_UNLISTED" && (family.size > 0 || general.size > 0));
     if (!hasRecipient) {

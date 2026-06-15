@@ -1,9 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
+import { displayNameFor, avatarUrlFor } from "@/lib/profile/identity";
 import { listVisibleEvents } from "@/lib/events/create";
 import { safeEmit } from "@/lib/telemetry";
 import { CosmicCommandCenter } from "@/components/timeline/cosmic/CosmicCommandCenter";
+import { WelcomeNudge } from "@/components/timeline/cosmic/WelcomeNudge";
+import { isPopulatedTimeline, pickNudge } from "@/lib/timeline/nudge";
 import { SignOutButton } from "./SignOutButton";
 import type { EventVM } from "@/lib/events/view";
 
@@ -18,18 +22,20 @@ import type { EventVM } from "@/lib/events/view";
 export default async function TimelinePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ saved?: string }>;
+  searchParams?: Promise<{ saved?: string; welcome?: string }>;
 }) {
   const account = await getCurrentAccount();
   if (!account || account.status !== "ACTIVE") redirect("/signin");
 
   const sp = (await searchParams) ?? {};
   const justSaved = sp.saved === "1";
+  const firstRun = sp.welcome === "1";
 
   const t = await getTranslations("cosmic");
   const tn = await getTranslations("nav");
   const events = await listVisibleEvents(account.id);
-  const ownerName = account.email.split("@")[0];
+  const ownerName = displayNameFor(account);
+  const ownerAvatar = avatarUrlFor(account);
 
   const vm: EventVM[] = events.map((e) => ({
     id: e.id,
@@ -39,16 +45,22 @@ export default async function TimelinePage({
     media: e.media.map((m) => ({ publicId: m.publicId })),
     lat: e.locationLat,
     lng: e.locationLng,
+    placeName: e.placeName,
     isOwn: e.accountId === account.id,
   }));
 
   // Content-blind browse signal (US-0.3 taxonomy). A revisit to a populated
   // timeline (>1 distinct day) is the "come back" half of the bet; the
   // first_revisit funnel stage is attained once a populated timeline is browsed.
-  const distinctDays = new Set(vm.map((e) => e.occurredOn.slice(0, 10))).size;
-  const isPopulated = distinctDays >= 2;
+  const isPopulated = isPopulatedTimeline(vm.map((e) => e.occurredOn.slice(0, 10)));
   safeEmit("timeline_view_opened", { granularity: "day" });
   if (isPopulated) safeEmit("funnel_stage_attained", { stage: "first_revisit" });
+
+  // First-run welcome nudge (J1.9) on ?welcome=1 (lands here straight after
+  // email-confirm). Otherwise, a returning user with a populated timeline gets a
+  // gentle "welcome back" revisit nudge — the "come back" half of the bet. An
+  // empty timeline keeps its own inline empty-state prompt (no revisit nudge).
+  const nudge = pickNudge({ firstRun, isPopulated });
 
   // "Now" is computed on the server so the past/future split is deterministic
   // across the RSC boundary (no client clock divergence).
@@ -67,7 +79,7 @@ export default async function TimelinePage({
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-5 py-3" dir="rtl">
           <div className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cosmic-blue to-cosmic-purple text-lg shadow-glow-blue">
-              ⏳
+              📖
             </span>
             <h1 className="text-lg font-extrabold text-cosmic-ink">{tn("timeline")}</h1>
           </div>
@@ -85,6 +97,26 @@ export default async function TimelinePage({
             >
               📅 {t("fullFamilyHistory")}
             </button>
+            {/* Entry points to the experience journeys (J5/J6/J7/J9). Without
+                these the surfaces are reachable only by typing the URL. */}
+            <Link
+              href="/playback"
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              ▶️ {tn("playback")}
+            </Link>
+            <Link
+              href="/capsules"
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              📦 {tn("capsules")}
+            </Link>
+            <Link
+              href="/family"
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              👪 {tn("family")}
+            </Link>
             <a
               href="/api/export"
               download
@@ -97,7 +129,13 @@ export default async function TimelinePage({
         </div>
       </header>
 
-      <CosmicCommandCenter events={vm} ownerName={ownerName} nowISO={nowISO} />
+      {nudge && (
+        <div className="shrink-0 px-5">
+          <WelcomeNudge mode={nudge} />
+        </div>
+      )}
+
+      <CosmicCommandCenter events={vm} ownerName={ownerName} ownerAvatar={ownerAvatar} nowISO={nowISO} />
     </div>
   );
 }

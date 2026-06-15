@@ -9,11 +9,12 @@ import { emit, safeEmit } from "@/lib/telemetry";
 const Body = z.object({
   note: z.string().max(10_000).optional().nullable(),
   occurredOn: z.string().datetime(), // canonical absolute (Gregorian) ISO timestamp
-  circle: z.enum(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED"]),
+  circle: z.enum(["ME_ONLY", "FAMILY", "PUBLIC_UNLISTED", "PUBLIC"]),
   legacyConsent: z.boolean().default(false),
   mediaPublicIds: z.array(z.string()).default([]),
   submitKey: z.string().min(8),
   location: z.object({ lat: z.number(), lng: z.number() }).optional().nullable(),
+  placeName: z.string().max(200).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
     mediaPublicIds: d.mediaPublicIds,
     submitKey: d.submitKey,
     location: d.location,
+    placeName: d.placeName,
   });
 
   if (!result.ok) {
@@ -80,6 +82,7 @@ export async function GET() {
       note: e.note,
       occurredOn: e.occurredOn,
       circle: e.circle,
+      placeName: e.placeName,
       legacyConsent: e.legacyConsent,
       media: e.media.map((m) => ({ publicId: m.publicId, type: m.type })),
     })),

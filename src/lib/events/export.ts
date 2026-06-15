@@ -61,6 +61,8 @@ export type ExportedEvent = {
   note: string | null;
   occurredOn: string;
   location: { lat: number; lng: number } | null;
+  /** Structured free-text place (J2.4); exported on its own field, not folded into the note. */
+  placeName: string | null;
   circle: string;
   legacyConsent: boolean;
   /** Tri-state consent + its decision timestamp, exported intact (US-4.1 AC-7). */
@@ -84,7 +86,10 @@ export type ExportedCapsule = {
 
 export type AccountExport = {
   format: "human-timeline-network/export";
-  formatVersion: 1;
+  // v2 (J2.4): events carry a structured `placeName` field instead of folding the
+  // place into the note text. v1 archives remain readable — `placeName` is simply
+  // absent/null there.
+  formatVersion: 2;
   exportedAt: string;
   account: { id: string; email: string; defaultCircle: string; createdAt: string };
   eventCount: number;
@@ -157,6 +162,7 @@ export async function buildAccountExport(accountId: string): Promise<AccountExpo
       e.locationLat != null && e.locationLng != null
         ? { lat: e.locationLat, lng: e.locationLng }
         : null,
+    placeName: e.placeName,
     circle: e.circle,
     legacyConsent: e.legacyConsent,
     legacyConsentValue: e.legacyConsentValue,
@@ -175,7 +181,7 @@ export async function buildAccountExport(accountId: string): Promise<AccountExpo
 
   return {
     format: "human-timeline-network/export",
-    formatVersion: 1,
+    formatVersion: 2,
     exportedAt: new Date().toISOString(),
     account: {
       id: account.id,
