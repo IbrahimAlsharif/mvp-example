@@ -162,8 +162,19 @@ export function CosmicCommandCenter({
         <main className="order-1 flex min-h-0 flex-col gap-3 lg:order-2">
           {localEvents.length === 0 ? (
             <div className="cosmic-panel relative">
-              <div className="p-12 text-center text-cosmic-muted">
-                لا توجد ذكريات بعد. اضغط على الخط الزمني لإضافة أول حدث.
+              {/* First-run empty state (FEAT-SMO F1): the interactive rail isn't
+                  rendered until ≥1 event exists, so the old "press the timeline"
+                  copy pointed at an affordance that wasn't there. Lead instead
+                  with a real, obvious action to add the first memory. */}
+              <div className="flex flex-col items-center gap-3 p-12 text-center">
+                <p className="text-base text-cosmic-muted">{t("emptyTitle")}</p>
+                <Link
+                  href="/events/new"
+                  data-testid="empty-add-first"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-cosmic-blue px-5 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
+                >
+                  {t("emptyAddCta")}
+                </Link>
               </div>
             </div>
           ) : (

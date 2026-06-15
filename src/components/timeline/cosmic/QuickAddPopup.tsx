@@ -186,20 +186,37 @@ export function QuickAddPopup({
     }
   }
 
-  // Place the card on the opposite vertical side from where a node bubble would
-  // sit, and clamp horizontally so it never spills off the rail edges.
-  const left = `clamp(9rem, ${anchor.xPct * 100}%, calc(100% - 9rem))`;
+  // Desktop: place the card on the opposite vertical side from where a node
+  // bubble would sit, clamped horizontally so it never spills off the rail
+  // edges. Exposed as CSS vars so the rail-anchored position applies ONLY at
+  // sm+ (see the sm: utilities below); on phones the dialog is a fixed,
+  // scrollable bottom sheet instead, so its Save button is always reachable
+  // (FEAT-SMO F4).
+  const anchorStyle = {
+    "--qa-left": `clamp(9rem, ${anchor.xPct * 100}%, calc(100% - 9rem))`,
+    "--qa-y": "calc(50% + 3.5rem)",
+  } as React.CSSProperties;
+  // On desktop, open above the click point (when a node bubble sits below) or
+  // below it (default) — mirrors the prior anchor.up behavior.
+  const anchorEdge = anchor.up ? "sm:[inset-block-end:var(--qa-y)]" : "sm:[inset-block-start:var(--qa-y)]";
 
   return (
     <>
-      {/* click-away scrim (transparent — keeps the timeline visible behind) */}
-      <div className="absolute inset-0 z-20" onClick={onClose} data-testid="quick-add-scrim" />
+      {/* click-away scrim — dimmed on mobile (it's a modal sheet), transparent
+          on desktop (keeps the timeline visible behind the rail-anchored card) */}
       <div
-        className="cosmic-panel absolute z-30 w-[19rem] -translate-x-1/2 rounded-2xl p-3 shadow-glow-blue"
-        style={{ left, [anchor.up ? "bottom" : "top"]: "calc(50% + 3.5rem)" }}
+        className="fixed inset-0 z-20 bg-cosmic-bg/50 backdrop-blur-sm sm:absolute sm:bg-transparent sm:backdrop-blur-none"
+        onClick={onClose}
+        data-testid="quick-add-scrim"
+      />
+      <div
+        ref={dialogRef}
+        className={`cosmic-panel fixed inset-x-3 bottom-3 z-30 max-h-[85vh] w-auto overflow-y-auto rounded-2xl p-3 shadow-glow-blue sm:absolute sm:inset-x-auto sm:bottom-auto sm:max-h-none sm:w-[19rem] sm:-translate-x-1/2 sm:overflow-visible sm:[inset-inline-start:var(--qa-left)] ${anchorEdge}`}
+        style={anchorStyle}
         dir="rtl"
         role="dialog"
-        aria-label={t("quickAddTitle")}
+        aria-modal="true"
+        aria-labelledby={titleId}
         data-testid="quick-add-popup"
         onClick={(e) => e.stopPropagation()}
       >

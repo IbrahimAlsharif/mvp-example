@@ -191,7 +191,8 @@
     "yesterday": "أمس",
     "daysAgo": "قبل {n} يوماً",
     "mediaUnavailable": "الوسائط غير متاحة مؤقتاً — لم تُحذف.",
-    "mediaRetry": "إعادة المحاولة"
+    "mediaRetry": "إعادة المحاولة",
+    "future": "في المستقبل"
   },
   "timeline": {
     "zoomDay": "يوم",
@@ -296,6 +297,9 @@
     "saveAnnounce": "تم حفظ الحدث بنجاح وإضافته إلى خطك الزمني.",
     "granularity_year": "سنة",
     "granularity_month": "شهر",
-    "granularity_day": "يوم"
+    "granularity_day": "يوم",
+    "emptyTitle": "لا توجد ذكريات بعد. ابدأ بإضافة أول حدث في حياتك.",
+    "emptyAddCta": "+ أضف أول ذكرى",
+    "railAddHint": "الخط الزمني — اضغط Enter لإضافة حدث، أو انقر على أي نقطة لاختيار تاريخها"
   }
 }

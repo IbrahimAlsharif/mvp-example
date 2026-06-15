@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J4 Browse Timeline & Export — Deep UX Journey Report</title>
+<style>
+  :root{--navy:#0f172a;--navy2:#1e293b;--gold:#b8961e;--ink:#e2e8f0;--mut:#94a3b8;
+        --risk:#e0803a;--block:#dc2626;--adv:#3b82f6;--good:#16a34a;--card:#16213a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--navy);color:var(--ink);line-height:1.6}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px;color:#fff}
+  h2{font-size:19px;margin:38px 0 12px;color:var(--gold);border-bottom:1px solid #2a3a55;padding-bottom:6px}
+  h3{font-size:15px;margin:18px 0 8px;color:#fff}
+  .sub{color:var(--mut);font-size:14px}
+  .verdict{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--block);border-radius:14px;padding:20px 22px;margin:18px 0}
+  .vbadge{font-weight:800;font-size:15px;padding:8px 16px;border-radius:999px;white-space:nowrap}
+  .v-fail{background:rgba(220,38,38,.16);color:#f87171;border:1px solid var(--block)}
+  .fix{background:rgba(184,150,30,.12);border-right:4px solid var(--gold);padding:12px 16px;border-radius:8px;margin-top:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:14px}
+  .stat .n{font-size:22px;font-weight:800;color:#fff}
+  .stat .l{font-size:12px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+  th,td{text-align:right;padding:9px 11px;border-bottom:1px solid #2a3a55;vertical-align:top}
+  th{color:var(--gold);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .p-risk{background:rgba(224,128,58,.16);color:var(--risk)}
+  .p-block{background:rgba(220,38,38,.2);color:#f87171}
+  .p-adv{background:rgba(59,130,246,.16);color:#60a5fa}
+  .p-good{background:rgba(22,163,74,.18);color:#4ade80}
+  .meta{background:var(--navy2);border-radius:10px;padding:14px 18px;font-size:13.5px}
+  .meta b{color:#fff}
+  code{background:#0b1120;color:#fbbf24;padding:1px 6px;border-radius:5px;font-size:12.5px}
+  .note{background:#0b1120;border:1px dashed #3a4d6e;border-radius:10px;padding:14px 16px;font-size:13.5px;color:var(--mut)}
+  ul{margin:6px 0;padding-inline-start:20px}
+  .barwrap{background:#0b1120;border-radius:8px;overflow:hidden;height:22px;width:100%;max-width:280px;display:inline-block;vertical-align:middle}
+  .bar{height:100%;background:linear-gradient(90deg,#b8961e,#e0803a);display:flex;align-items:center;justify-content:flex-start;padding-inline-start:8px;color:#0b1120;font-weight:800;font-size:12px}
+  .imgrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+  .imgrow figure{margin:0;background:var(--card);border:1px solid #2a3a55;border-radius:10px;padding:8px}
+  .imgrow img{width:100%;border-radius:6px;display:block}
+  .imgrow figcaption{font-size:11.5px;color:var(--mut);margin-top:6px}
+  .ok{color:var(--good)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>J4 — Browse the Life Timeline &amp; Export</h1>
+  <div class="sub">Deep UI/UX expert evaluation · journey-ux · web · MVP · 2026-06-15 · FEAT-RFL · the "revisit" half of the bet</div>
+
+  <div class="verdict">
+    <span class="vbadge v-fail">UX FAILURE</span>
+    <div><b>Mobile, critical-path.</b> Export — the journey's defining "take everything with you / outlive the company" action — is <b>impossible to reach on a 390px phone</b> (the header overflows off-screen with no scroll). On desktop alone J4 is USABLE WITH FRICTION. A defect that blocks critical-path completion in a required viewport flips the band.</div>
+  </div>
+  <div class="fix"><b>Single highest-impact fix:</b> make the timeline header responsive at ≤480px — collapse export + family + sign-out into a reachable menu / scroll strip / hamburger. That lifts J4 from UX FAILURE to USABLE WITH FRICTION on mobile, and simultaneously clears J1's F3 (same root).</div>
+
+  <div class="grid">
+    <div class="stat"><div class="n p-block" style="background:none">FAIL</div><div class="l">Mobile export reachability (FJ4-1)</div></div>
+    <div class="stat"><div class="n">26<span style="font-size:14px;color:var(--mut)">/40</span></div><div class="l">Nielsen total</div></div>
+    <div class="stat"><div class="n ok">no drift</div><div class="l">Zoom held event at real instant</div></div>
+    <div class="stat"><div class="n">1 / 3</div><div class="l">Findings: blocking / risk</div></div>
+  </div>
+
+  <h2>Run identity</h2>
+  <div class="meta">
+    <b>Persona:</b> multi-generation family / elderly — re-experiencing the past + taking everything via export<br>
+    <b>Business goal:</b> navigate a continuous time axis + export everything in an open format<br>
+    <b>Success signal:</b> no-drift rendering across zoom; events open to detail; complete open-format export &nbsp;·&nbsp; <b>Persona class:</b> member<br>
+    <b>Surface:</b> Cosmic temporal-zoom rail + export → archetypes Power-user + A11y + Mobile<br>
+    <b>Journey folder:</b> <code>.sara/journeys/j4-browse-timeline/</code> &nbsp;·&nbsp; <b>Map:</b> <code>maps/web.yaml</code> (verified, fingerprint <code>j4-real-20260615</code>)<br>
+    <b>Coverage:</b> desktop 1280 · 390px mobile · ar-RTL (native default) &nbsp;·&nbsp; <b>Account:</b> ux.elderly.0615@example.com (1 FAMILY event)
+  </div>
+
+  <div class="note"><b>WIP note (authorized intervention).</b> First load <b>500'd to an error boundary</b>: <code>PostgresError 22P02: invalid input value for enum "PrivacyCircle": "PUBLIC"</code>. Diagnosed as <b>uncommitted work-in-progress</b> (a new <code>PUBLIC</code> circle added to schema + the <code>listVisibleEvents</code> query across 11 modified + 3 new files) where the <b>DB enum was never migrated</b> — not the stale-client env issue and not shipped J4. With the user's authorization, ran <code>prisma db push</code> + regenerated client + clean-restarted; the timeline then rendered with zero errors. Flagged for the WIP owner to finish/commit. Excluded from the J4 band (WIP, not shipped). Note: a real user on the pre-push state would hit a full timeline crash.</div>
+
+  <h2>Per-step UX read (project persona)</h2>
+  <table>
+    <tr><th>#</th><th>Step</th><th>UX read</th></tr>
+    <tr><td>1</td><td>Open timeline → render</td><td>After the WIP fix: renders cleanly; FAMILY event node NOW-centered. Warm rebranded copy ("احفظ حكايتي", "اروِ حكايتي", "من تحب").</td></tr>
+    <tr><td>2</td><td>Zoom the window</td><td class="ok"><b>Drift-free</b> — span "± 9 شهر"→"± 3 شهر", slider 50→65, axis re-scaled; event held its June-2026 instant across ±9mo→±3mo→±1yr. But span label low-contrast+tiny (FJ4-2); zoom cluster sub-44px (FJ4-3); axis 8–10px (FJ4-4).</td></tr>
+    <tr><td>3</td><td>Filter by circle</td><td class="ok"><b>Clean.</b> <code>role=group</code> + multi-select aria-label; clicking العائلة toggled الكل OFF — single-pressed, no misleading dual-pressed state (business-run concern does NOT reproduce). New "عام" (PUBLIC) chip surfaces (WIP).</td></tr>
+    <tr><td>4</td><td>Open event → detail</td><td>Node present + openable (detail dialog evaluated in depth in the J3 run — exemplary).</td></tr>
+    <tr><td>5</td><td>Export everything</td><td>Desktop: <span class="ok">/api/export → 200, attachment, open format, eventCount=1 (==DB)</span> — complete archive. <b>Mobile (390px): export CTA off the left edge (−97→−33), header overflow with no scroll, no body duplicate → UNREACHABLE (FJ4-1).</b></td></tr>
+  </table>
+
+  <h2>Findings</h2>
+  <table>
+    <tr><th>ID</th><th>Method / criterion</th><th>Finding &amp; fix</th><th>Sev</th></tr>
+    <tr><td><b>FJ4-1</b></td><td>floor occluded/offscreen control · 390px</td><td>Header <code>overflow-x:visible</code> (scrollW 554 vs 390), no scroll ancestor; <b>export + family + sign-out render off the left edge</b>, <code>anyReachableExport:false</code>. Export is J4's critical-path success signal → <b>completion impossible on mobile</b>. Same root as J1 F3, escalated to blocking here. <b>Fix:</b> responsive header (menu/scroll/hamburger) ≤480px.</td><td><span class="pill p-block">BLOCKING</span></td></tr>
+    <tr><td><b>FJ4-2</b></td><td>WCAG 1.4.3 contrast · zoom</td><td>Zoom span label "± 9 شهر" orange #ea580c on dark = <b>3.56</b> (AA 4.5), 10px — the key "how much time am I viewing" feedback, low-contrast + tiny. <b>Fix:</b> brighter accent + ≥12px.</td><td><span class="pill p-risk">risk · N3</span></td></tr>
+    <tr><td><b>FJ4-3</b></td><td>floor tap-target</td><td>Zoom +/− 20px, presets 21px, <b>slider 4px tall</b>, export CTA 34px — whole nav cluster below 44px. <b>Fix:</b> ≥44px. (Shared with J1 F4.)</td><td><span class="pill p-risk">risk · N2</span></td></tr>
+    <tr><td><b>FJ4-4</b></td><td>Method 4 legibility · rail</td><td>Axis labels 8–10px, span label 10px — below 12px legibility floor; brutal for elderly. (Shared with J1 F8.) <b>Fix:</b> ≥12px.</td><td><span class="pill p-risk">risk · N2</span></td></tr>
+  </table>
+
+  <h2>Scores</h2>
+  <h3>Nielsen heuristic health — 26/40</h3>
+  <div class="barwrap"><div class="bar" style="width:65%">26 / 40 · band dragged by mobile blocker</div></div>
+  <p class="sub">Strongest: #1 status (zoom/filter feedback), #3 user control, #7 flexibility (presets + slider + buttons). Weakest: the header that breaks on mobile (#4/#7) + tiny low-contrast nav craft (#8).</p>
+
+  <table>
+    <tr><th>Lens</th><th>Result</th></tr>
+    <tr><td>WCAG AA</td><td><b>FAIL</b> — 1.4.3 span-label contrast 3.56 (FJ4-2); target-size across nav cluster (FJ4-3); offscreen export = operable-name-not-in-viewport on mobile (FJ4-1). <span class="ok">PASS</span> — native range slider w/ label, filter group semantics, keyboard-operable zoom.</td></tr>
+    <tr><td>Cognitive walkthrough</td><td>Desktop steps 1–5 pass; <b>mobile step 5 (export) fails Q2</b> — the action is not discoverable/reachable at all.</td></tr>
+    <tr><td>Cognitive load</td><td><b>MODERATE</b> — dense nav (6 header actions + zoom cluster + 5 filter chips + 4 secondary), but grouped and labeled.</td></tr>
+    <tr><td>AI-slop test</td><td><b>Minimal</b> — only the shared gradient button; the cosmic temporal-zoom rail is a genuinely distinctive, intentional aesthetic. No editorial/scaffold tells.</td></tr>
+    <tr><td>RTL / locale</td><td><span class="ok">PASS</span> — native RTL (past-right/future-left, NOW-centered, no untranslated strings).</td></tr>
+  </table>
+
+  <h2>Multi-persona stress findings</h2>
+  <table>
+    <tr><th>Archetype</th><th>Result</th></tr>
+    <tr><td>Power user (efficiency)</td><td>Zoom presets + slider + buttons give fast window control; drift-free. Friction: tiny 4px slider + 20px zoom buttons demand precision.</td></tr>
+    <tr><td>Distracted mobile</td><td><b>Blocked</b> — export + family + sign-out unreachable off-screen (FJ4-1); whole nav cluster sub-44px (FJ4-3).</td></tr>
+    <tr><td>Accessibility-dependent</td><td>Native keyboard slider + filter group semantics are good; but span-label contrast (FJ4-2) + 8–10px labels (FJ4-4) fail the elderly/low-vision reader.</td></tr>
+  </table>
+
+  <h2>Positives (kept honest)</h2>
+  <ul>
+    <li class="ok">Zoom is <b>drift-free</b> — the load-bearing UJM failure point does not reproduce; the event stayed at its real instant across every zoom level.</li>
+    <li class="ok">Circle filter a11y is clean — <code>role=group</code>, multi-select aria-label, single-pressed semantics (prior business-run concern does not reproduce).</li>
+    <li class="ok">Zoom slider is a native keyboard-operable <code>&lt;input type=range&gt;</code> with label (right semantics; just too small a target).</li>
+    <li class="ok">Export returns a complete open-format archive on desktop (eventCount matches DB) — portability backed where reachable.</li>
+    <li class="ok">Warm, human rebranded copy; RTL native and correct.</li>
+  </ul>
+
+  <h2>Evidence</h2>
+  <div class="imgrow">
+    <figure><img src="../.sara/journeys/j4-browse-timeline/runs/ux/web/20260615T064500Z/s1-timeline-render-desktop.png" alt="render"><figcaption>S1 · timeline render (desktop)</figcaption></figure>
+    <figure><img src="../.sara/journeys/j4-browse-timeline/runs/ux/web/20260615T064500Z/s2-zoom-3month-desktop.png" alt="zoom"><figcaption>S2 · zoom ±3mo — drift-free</figcaption></figure>
+    <figure><img src="../.sara/journeys/j4-browse-timeline/runs/ux/web/20260615T064500Z/s5-export-offscreen-390px.png" alt="export offscreen"><figcaption>S5 · 390px — export off-screen (FJ4-1, blocking)</figcaption></figure>
+  </div>
+
+  <h2>Verdict &amp; follow-ups</h2>
+  <p><b>UX FAILURE (mobile, critical-path)</b> — driven solely by FJ4-1. On desktop J4 is USABLE WITH FRICTION (drift-free zoom, complete export, clean filters; risks are the tiny low-contrast nav labels). J4's functional business verdict (VALUE DELIVERED) was desktop-scoped; this mobile-completion gap is the journey-test-owned failure this run surfaces. <b>The header-responsive fix is the cross-journey denominator</b> — it clears J1 F3 + J4 FJ4-1 together. Re-run journey-ux on J4 mobile after the fix.</p>
+  <p class="sub">Filing: per the standing "list then fix" preference, findings are documented here, not auto-filed. AI-slop result and cognitive-load level are reported alongside the verdict, not folded into the band.</p>
+</div>
+</body>
+</html>

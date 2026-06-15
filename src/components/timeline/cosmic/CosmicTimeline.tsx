@@ -266,6 +266,24 @@ export function CosmicTimeline({
     [instantFromClientX, onAddAt],
   );
 
+  // Keyboard equivalent of clicking the rail (FEAT-SMO F2): the rail is a
+  // focusable control, so Enter/Space opens quick-add at NOW (rail center) —
+  // giving keyboard and screen-reader users a path that mouse-only clicking
+  // otherwise denied them. The user can then edit the date in the popup.
+  const onRailKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if ((e.target as HTMLElement).closest("[data-node]")) return;
+      e.preventDefault();
+      const rail = railRef.current;
+      if (!rail) return;
+      const rect = rail.getBoundingClientRect();
+      const r = instantFromClientX(rect.left + rect.width / 2);
+      if (r) onAddAt?.(r.atISO, { xPct: r.xPct, up: false });
+    },
+    [instantFromClientX, onAddAt],
+  );
+
   return (
     <section className="cosmic-panel relative px-4 py-6 sm:px-8" data-testid="cosmic-timeline">
       {/* Column titles + in-panel zoom widget */}
@@ -281,11 +299,15 @@ export function CosmicTimeline({
           under the cursor; a click on empty axis opens quick-add at that date */}
       <div
         ref={railRef}
-        className="relative mt-3 h-64 cursor-crosshair touch-pan-y select-none"
+        className="relative mt-3 h-64 cursor-crosshair touch-pan-y select-none rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-blue/60"
         dir="rtl"
+        role="button"
+        tabIndex={0}
+        aria-label={t("railAddHint")}
         onMouseMove={onRailMove}
         onMouseLeave={() => setHover(null)}
         onClick={onRailClick}
+        onKeyDown={onRailKeyDown}
         data-testid="timeline-rail"
       >
         {/* Hover readout: day · date · time at the cursor, so the user knows
