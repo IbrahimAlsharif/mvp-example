@@ -63,7 +63,7 @@ export function CircleSelector({
               value={c}
               checked={selected}
               onChange={() => select(c)}
-              className="mt-1 accent-brand"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
             />
             <span className="flex flex-col">
               <span className="font-semibold text-neutral-800">{t(k)}</span>
