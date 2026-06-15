@@ -1,24 +1,34 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCurrentAccount } from "@/lib/auth/session";
-import { listOwnEvents } from "@/lib/events/create";
+import { listVisibleEvents } from "@/lib/events/create";
+import { safeEmit } from "@/lib/telemetry";
 import { CosmicCommandCenter } from "@/components/timeline/cosmic/CosmicCommandCenter";
 import { SignOutButton } from "./SignOutButton";
 import type { EventVM } from "@/lib/events/view";
 
 /**
  * Home timeline (J1 landing) — the dark "cosmic command center" view. Protected.
- * Lists the user's own events (reads hit Postgres, so a just-saved event is
- * fresh on any session — AC-15) and offers the "+ Add event" entry (AC-1).
- * The cosmic theme is scoped to this page via `.timeline-cosmic`.
+ * Lists every event the viewer may see (their own + graph-permitted events of
+ * their accepted FAMILY/GENERAL connections — J3/J9), enforced server-side via
+ * listVisibleEvents. Reads hit Postgres, so a just-saved event is fresh on any
+ * session (AC-15). Offers the "+ Add event" entry (AC-1). The cosmic theme is
+ * scoped to this page via `.timeline-cosmic`.
  */
-export default async function TimelinePage() {
+export default async function TimelinePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ saved?: string }>;
+}) {
   const account = await getCurrentAccount();
   if (!account || account.status !== "ACTIVE") redirect("/signin");
 
+  const sp = (await searchParams) ?? {};
+  const justSaved = sp.saved === "1";
+
   const t = await getTranslations("cosmic");
   const tn = await getTranslations("nav");
-  const events = await listOwnEvents(account.id);
+  const events = await listVisibleEvents(account.id);
   const ownerName = account.email.split("@")[0];
 
   const vm: EventVM[] = events.map((e) => ({
@@ -29,7 +39,16 @@ export default async function TimelinePage() {
     media: e.media.map((m) => ({ publicId: m.publicId })),
     lat: e.locationLat,
     lng: e.locationLng,
+    isOwn: e.accountId === account.id,
   }));
+
+  // Content-blind browse signal (US-0.3 taxonomy). A revisit to a populated
+  // timeline (>1 distinct day) is the "come back" half of the bet; the
+  // first_revisit funnel stage is attained once a populated timeline is browsed.
+  const distinctDays = new Set(vm.map((e) => e.occurredOn.slice(0, 10))).size;
+  const isPopulated = distinctDays >= 2;
+  safeEmit("timeline_view_opened", { granularity: "day" });
+  if (isPopulated) safeEmit("funnel_stage_attained", { stage: "first_revisit" });
 
   // "Now" is computed on the server so the past/future split is deterministic
   // across the RSC boundary (no client clock divergence).
@@ -37,6 +56,13 @@ export default async function TimelinePage() {
 
   return (
     <div className="timeline-cosmic flex h-screen flex-col overflow-hidden">
+      {/* Announce a just-completed durable save to assistive tech only AFTER the
+          server-confirmed write + redirect landed here (US-0.4 AC-10). */}
+      {justSaved && (
+        <p role="status" aria-live="polite" className="sr-only">
+          {t("saveAnnounce")}
+        </p>
+      )}
       <header className="shrink-0 border-b border-cosmic-border bg-cosmic-bg/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-5 py-3" dir="rtl">
           <div className="flex items-center gap-2">
@@ -59,6 +85,13 @@ export default async function TimelinePage() {
             >
               📅 {t("fullFamilyHistory")}
             </button>
+            <a
+              href="/api/export"
+              download
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              ⬇️ {t("export")}
+            </a>
             <SignOutButton label={tn("signOut")} />
           </div>
         </div>

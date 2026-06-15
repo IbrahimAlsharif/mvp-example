@@ -9,7 +9,6 @@ import {
   ArrowRight,
   ImagePlus,
   Sparkles,
-  MapPin,
   CalendarDays,
   X,
   Image as ImageIcon,
@@ -21,8 +20,12 @@ import {
   Loader2,
 } from "lucide-react";
 import { CircleSelector } from "@/components/CircleSelector";
+import { CapturePermission } from "@/components/capture/CapturePermission";
+import { LocationField } from "@/components/capture/LocationField";
+import { capturePhotoFromStream } from "@/lib/capture/photo";
 import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
+import { dayKey } from "@/lib/events/date";
 
 type Item = {
   name: string;
@@ -44,11 +47,19 @@ function NewEventInner() {
   const t = useTranslations("event");
   const router = useRouter();
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // Default to the user's LOCAL date, not UTC. `new Date().toISOString()` is
+  // UTC, so just after local midnight in a positive-offset timezone it yields
+  // yesterday — silently dating a new memory to the wrong day. dayKey() uses
+  // local Y/M/D, matching how the timeline groups events.
+  const [date, setDate] = useState(() => dayKey(new Date()));
   const [circle, setCircle] = useState<PrivacyCircle>("ME_ONLY"); // G1 default
   const [legacyConsent, setLegacyConsent] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  // Location is OFF by default (US-0.2 AC-4): empty unless the user adds one.
+  // `locationSuggested` marks an auto-derived value (EXIF / device geo) that the
+  // user must confirm or clear before it sticks (AC-10 / US-2.2 AC-3).
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationSuggested, setLocationSuggested] = useState(false);
   const [dateFromPhoto, setDateFromPhoto] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,16 +75,25 @@ function NewEventInner() {
   const persistedIds = items.filter((i) => i.status === "persisted").map((i) => i.publicId!);
   const canSave = !uploading && !submitting && (note.trim().length > 0 || persistedIds.length > 0);
 
-  async function onFiles(files: FileList | null) {
+  function onFiles(files: FileList | null) {
     if (!files) return;
-    for (const file of Array.from(files)) {
+    void addFiles(Array.from(files));
+  }
+
+  async function addFiles(files: File[]) {
+    for (const file of files) {
       const idx = items.length;
       const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
       setItems((prev) => [...prev, { name: file.name, type: file.type, status: "uploading", previewUrl }]);
 
-      // Auto-fill date + location from the photo's own metadata (no manual step).
+      // Auto-derive date + location from the photo's own metadata. The location
+      // is a SUGGESTION the user must confirm/clear (US-2.2 AC-3), never silently
+      // committed; the date pre-fills but stays freely editable.
       readExif(file).then((exif) => {
-        if (exif.lat != null && exif.lng != null) setLocation({ lat: exif.lat, lng: exif.lng });
+        if (exif.lat != null && exif.lng != null) {
+          setLocation({ lat: exif.lat, lng: exif.lng });
+          setLocationSuggested(true);
+        }
         if (exif.date) {
           setDate(exif.date);
           setDateFromPhoto(true);
@@ -90,6 +110,17 @@ function NewEventInner() {
         setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, status: "failed" } : it)));
         setError(reason);
       }
+    }
+  }
+
+  // A granted live camera stream → capture one frame → into the same upload
+  // pipeline as an uploaded file (US-0.2 AC-2; pipeline owned by US-1.2).
+  async function onLiveCamera(stream: MediaStream) {
+    try {
+      const file = await capturePhotoFromStream(stream);
+      await addFiles([file]);
+    } catch {
+      setError("capture_failed");
     }
   }
 
@@ -251,6 +282,14 @@ function NewEventInner() {
           </div>
         </section>
 
+        {/* Just-in-time capture (US-0.2): camera/mic ask only when chosen, and a
+            denial/unsupported never blocks — it falls back to the upload dropzone
+            below. The note-only path above needs zero permissions (AC-11). */}
+        <section className="flex flex-wrap gap-2" data-testid="capture-controls">
+          <CapturePermission modality="camera" onLiveStream={onLiveCamera} onFallback={() => {}} />
+          <CapturePermission modality="mic" onLiveStream={() => {}} onFallback={() => {}} />
+        </section>
+
         {/* Media — type is detected from the file, no manual picker */}
         <section className="flex flex-col gap-3">
           <label
@@ -333,28 +372,44 @@ function NewEventInner() {
           {dateFromPhoto && (
             <span className="text-xs text-neutral-500">{t("dateFromPhoto")}</span>
           )}
-          {location && (
-            <span className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs font-medium text-emerald-700" data-testid="location-badge">
-              <MapPin className="h-3.5 w-3.5" aria-hidden /> {t("locationFromPhoto")}
-            </span>
-          )}
+          <LocationField
+            value={location}
+            suggested={locationSuggested}
+            onChange={(loc, sugg) => {
+              setLocation(loc);
+              setLocationSuggested(sugg);
+            }}
+            onConfirmSuggestion={() => setLocationSuggested(false)}
+            onClear={() => {
+              setLocation(null);
+              setLocationSuggested(false);
+            }}
+          />
         </section>
 
         {/* Privacy */}
         <CircleSelector value={circle} onChange={setCircle} hasMedia={hasMedia} />
 
-        <label className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/40 p-4">
+        {/* Per-item legacy consent (US-4.1). Checking GRANTS; leaving it
+            unchecked is UNSET (treated as no heir access). The hint states
+            plainly that nothing is shared/released now (AC-9). */}
+        <label className="flex items-start gap-3 rounded-2xl border border-white/60 bg-white/40 p-4">
           <input
             type="checkbox"
             checked={legacyConsent}
             onChange={(e) => setLegacyConsent(e.target.checked)}
-            className="h-5 w-5 accent-brand"
+            className="mt-0.5 h-5 w-5 accent-brand"
           />
-          <span className="text-sm text-neutral-700">{t("legacyConsent")}</span>
+          <span className="flex flex-col">
+            <span className="text-sm text-neutral-700">{t("legacyConsent")}</span>
+            <span className="mt-1 text-xs text-neutral-500">{t("legacyConsentHint")}</span>
+          </span>
         </label>
 
+        {/* Assertive live region: a save/upload failure is announced to AT, not
+            signaled by color alone (US-0.4 AC-6/AC-10). */}
         {error && (
-          <p role="alert" className="animate-fade-in rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700">
+          <p role="alert" aria-live="assertive" className="animate-fade-in rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700">
             {error}
           </p>
         )}
@@ -363,10 +418,17 @@ function NewEventInner() {
           onClick={onSave}
           disabled={!canSave}
           data-testid="save-event"
-          className="tap-target inline-flex items-center justify-center rounded-2xl bg-accent-gradient px-8 py-3.5 font-bold text-white shadow-accent transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+          className="tap-target inline-flex items-center justify-center rounded-2xl bg-accent-gradient px-8 py-3.5 font-bold text-white shadow-accent transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/40 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/40"
         >
           {submitting ? t("saving") : uploading ? t("uploadPending") : t("save")}
         </button>
+
+        {/* Polite status region: announces in-progress upload/save to AT so a
+            non-sighted user isn't left guessing; success is announced on the
+            timeline after the durable commit/redirect (US-0.4 AC-10). */}
+        <p role="status" aria-live="polite" className="sr-only">
+          {submitting ? t("saving") : uploading ? t("uploadPending") : ""}
+        </p>
       </div>
     </main>
   );

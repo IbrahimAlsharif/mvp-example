@@ -33,6 +33,16 @@ enum AccountStatus {
   ACTIVE
 }
 
+// Per-item legacy-consent decision (US-4.1). Tri-state: GRANTED / DENIED record
+// an explicit owner choice; UNSET is the default and is treated IDENTICALLY to
+// DENIED (silence = no future heir access). Captured + exported only — NO code
+// path reads this to grant access at MVP (inheritance is deferred, G9).
+enum LegacyConsent {
+  UNSET
+  GRANTED
+  DENIED
+}
+
 // A connection's tier governs which of an author's events a counterpart can see
 // (US — social graph). FAMILY can see the author's FAMILY + PUBLIC_UNLISTED
 // events; GENERAL can see only PUBLIC_UNLISTED. ME_ONLY is never shared. This
@@ -98,6 +108,9 @@ model Account {
   connectionsA Connection[] @relation("ConnectionA")
   connectionsB Connection[] @relation("ConnectionB")
   sentRequests Connection[] @relation("ConnectionRequester")
+
+  moderationCases ModerationCase[]
+  capsules        Capsule[]
 }
 
 // An accepted or pending link between two accounts (the social graph edge).
@@ -176,7 +189,12 @@ model Event {
   locationLat   Float?
   locationLng   Float?
   circle        PrivacyCircle @default(ME_ONLY) // ATOMIC with event (US-3.1 AC-9)
-  legacyConsent Boolean       @default(false) // ATOMIC consent flag (US-4.1 / G5)
+  legacyConsent Boolean       @default(false) // legacy boolean (kept; mirrors GRANTED)
+  // Tri-state consent + its decision timestamp, committed ATOMICALLY with the
+  // event/circle (US-4.1 AC-1/AC-3). UNSET == no heir access (AC-2). Never an
+  // access backdoor (AC-8/G9).
+  legacyConsentValue LegacyConsent @default(UNSET)
+  legacyConsentAt    DateTime? // ISO-8601 decision time, set when GRANTED/DENIED
   submitKey     String        @unique // idempotent submit (US-1.1 AC-8)
   version       Int           @default(1) // versioning seam (US-1.1 AC-16)
   deletedAt     DateTime? // soft-delete / recoverable (G2)
@@ -237,4 +255,127 @@ model ShareLink {
   createdAt DateTime  @default(now())
 
   @@index([eventId])
+}
+
+// ─── Moderation (US-3.4) ──────────────────────────────────────────────────────
+// Human-in-the-loop only. A moderation hold is an ACCESS/VISIBILITY restriction
+// layered OVER the durable media store — it NEVER deletes or permanently locks
+// the bytes (G2/G3). Restoration is a metadata/access operation, not a re-upload.
+// Every account-affecting action passes through lib/moderation/guard, which
+// rejects any non-human actor (AC-10). There is NO scanning-driven referral
+// pipeline: a case is only ever opened from actual human knowledge.
+
+enum ModerationScope {
+  ITEM // a single event/item is access-held
+  ACCOUNT // the whole account is access-held (appeal flow stays reachable)
+}
+
+enum ModerationStatus {
+  OPEN // enqueued from a human report, awaiting human review
+  HELD // access hold applied (store untouched)
+  APPEALED // owner has appealed; routed back to human review
+  CLEARED // review cleared it; access restored intact
+  REPORTED // human confirmed; moved to secure preservation store (§2258A(h))
+  ESCALATED // target review window elapsed with no decision (never auto-actioned)
+}
+
+// `source` is always a human report — no scan source exists. `reviewerId` and the
+// timestamps make the human-in-the-loop chain auditable (AC-9). No row here ever
+// represents an automated account deletion/lock.
+model ModerationCase {
+  id          String           @id @default(cuid())
+  accountId   String
+  account     Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  eventId     String? // null for an account-scope case
+  scope       ModerationScope
+  status      ModerationStatus @default(OPEN)
+  source      String           @default("human_report") // never a scan source (AC-2)
+  reviewerId  String? // the human reviewer who last acted (AC-9); never automated
+  reviewDueAt DateTime? // target window; on elapse → ESCALATED, never auto-actioned (AC-12)
+  appealedAt  DateTime?
+  restoredAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  actions ModerationAction[]
+
+  @@index([accountId])
+  @@index([status])
+}
+
+// Append-only audit trail. Every entry records a HUMAN actor + timestamp; a
+// non-human actor can never reach here because the choke point rejects it first.
+model ModerationAction {
+  id        String         @id @default(cuid())
+  caseId    String
+  case      ModerationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actorType String // always "human_reviewer" for an executed action (AC-3/AC-10)
+  actorId   String? // the human reviewer's id (audit)
+  action    String // hold | clear | restore | report
+  createdAt DateTime       @default(now())
+
+  @@index([caseId])
+}
+
+// ─── Future Capsules (US-4.2) ─────────────────────────────────────────────────
+// A sealed message/media that unlocks on a future DATE only — no death-trigger,
+// no heir, no posthumous handoff (G9, date-triggered only). Sealed = immutable
+// content + unlock date + recipient. `unlockAtMs` is the absolute instant
+// resolved ONCE at seal time from the owner's seal-time timezone offset, so a
+// later DST/offset change can never move it earlier (AC-7). Pre-unlock content
+// is unreachable (AC-6). Cancel withdraws an unsealed-future capsule (AC-11).
+
+enum CapsuleType {
+  MESSAGE
+  VIDEO
+  LETTER
+  GOAL
+  PLAN
+}
+
+enum CapsuleStatus {
+  SEALED // locked, pending its unlock date
+  UNLOCKED // unlock date reached; content readable by current recipients
+  CANCELLED // owner withdrew it (explicit action, G2)
+  UNDELIVERABLE // unlocked but no valid recipient remains (AC-10)
+}
+
+model Capsule {
+  id                String        @id @default(cuid())
+  ownerAccountId    String
+  owner             Account       @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  type              CapsuleType
+  note              String? // text content (letter/message/goal/plan)
+  // Recipient is a circle OR a specific already-invited member (US-3.5). At MVP
+  // we target a circle; a removed recipient gains no access at unlock (AC-10).
+  recipientCircle   PrivacyCircle @default(FAMILY)
+  unlockLocalDay    String // yyyy-mm-dd as the owner entered it
+  unlockOffsetMin   Int // owner's seal-time UTC offset (minutes), the authoritative resolver
+  unlockAtMs        BigInt // absolute resolved instant (epoch ms); immune to later tz drift
+  status            CapsuleStatus @default(SEALED)
+  sealedAt          DateTime      @default(now())
+  cancelledAt       DateTime?
+  createdAt         DateTime      @default(now())
+
+  media CapsuleMedia[]
+
+  @@index([ownerAccountId])
+  @@index([status, unlockAtMs])
+}
+
+// Capsule media reuses the durable upload pipeline's content-addressed blobs but
+// is NOT a timeline Media row (a sealed capsule is not on the timeline). Stored
+// content-blind; non-guessable publicId; never served before unlock (AC-6).
+model CapsuleMedia {
+  id             String   @id @default(cuid())
+  capsuleId      String
+  capsule        Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  publicId       String   @unique
+  type           MediaType
+  mimeType       String
+  storageKey     String
+  checksumSha256 String
+  createdAt      DateTime @default(now())
+
+  @@index([capsuleId])
 }

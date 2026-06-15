@@ -73,14 +73,10 @@ export function EventCard({
           className={`mt-3 grid gap-1 ${photos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
         >
           {photos.map((m) => (
-            <img
+            <MediaImage
               key={m.publicId}
-              src={`/api/media/${m.publicId}`}
-              alt=""
-              data-testid="event-media"
-              className={`w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] ${
-                photos.length === 1 ? "max-h-[28rem]" : "aspect-square"
-              }`}
+              publicId={m.publicId}
+              single={photos.length === 1}
             />
           ))}
         </div>
@@ -99,6 +95,58 @@ export function EventCard({
         <ActionButton icon="↗️" label={t("share")} />
       </footer>
     </article>
+  );
+}
+
+/**
+ * A media thumbnail with an explicit, recoverable "temporarily unavailable —
+ * retry" state (US-2.1 AC-11). A failed media load (expired signed URL, cache
+ * miss, transient error) must NEVER imply the memory was deleted (G2) and must
+ * be visibly distinct from a real empty/sparse period — so on error we show a
+ * retry affordance, not a blank or a broken-image glyph. Retry re-requests with
+ * a cache-busting nonce so a fresh signed URL is minted.
+ */
+function MediaImage({ publicId, single }: { publicId: string; single: boolean }) {
+  const t = useTranslations("event");
+  const [failed, setFailed] = useState(false);
+  const [nonce, setNonce] = useState(0);
+
+  if (failed) {
+    return (
+      <div
+        role="status"
+        data-testid="media-unavailable"
+        className={`flex w-full flex-col items-center justify-center gap-2 bg-neutral-50 p-4 text-center text-xs text-neutral-500 ${
+          single ? "max-h-[28rem] min-h-40" : "aspect-square"
+        }`}
+      >
+        <span aria-hidden className="text-lg">🖼️</span>
+        <span>{t("mediaUnavailable")}</span>
+        <button
+          type="button"
+          onClick={() => {
+            setFailed(false);
+            setNonce((n) => n + 1);
+          }}
+          className="rounded-lg border border-neutral-300 px-3 py-1 font-semibold text-neutral-700 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        >
+          {t("mediaRetry")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/media/${publicId}${nonce ? `?retry=${nonce}` : ""}`}
+      alt=""
+      data-testid="event-media"
+      onError={() => setFailed(true)}
+      className={`w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] ${
+        single ? "max-h-[28rem]" : "aspect-square"
+      }`}
+    />
   );
 }
 

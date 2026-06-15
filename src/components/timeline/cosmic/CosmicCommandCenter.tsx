@@ -34,6 +34,14 @@ const INTERESTS = [
   { label: "أدب", icon: "📖" },
 ];
 
+// The relationship/interest sidebars (LifeCircles + interest galaxies) are
+// presentational scaffolds backed by PLACEHOLDER data — there is no relationship
+// model in the schema yet. Showing fabricated family data to a signed-in user on
+// a privacy/trust product is misleading, so they are hidden by default and only
+// shown when explicitly opted in. Set NEXT_PUBLIC_SHOW_SCAFFOLD_UI=true to render
+// them in design/demo contexts. Remove this gate once they are wired to real data.
+const SHOW_SCAFFOLD_UI = process.env.NEXT_PUBLIC_SHOW_SCAFFOLD_UI === "true";
+
 export function CosmicCommandCenter({
   events,
   ownerName,
@@ -90,7 +98,11 @@ export function CosmicCommandCenter({
     <div className="flex min-h-0 flex-1 flex-col" dir="rtl">
       {/* Content row fills the space between the page header and the toolbar; on
           large screens it never scrolls the page — columns scroll internally. */}
-      <div className="mx-auto grid min-h-0 w-full max-w-[1500px] flex-1 gap-3 overflow-y-auto px-3 py-3 lg:grid-cols-[17rem_minmax(0,1fr)_10rem] lg:overflow-hidden">
+      <div
+        className={`mx-auto grid min-h-0 w-full max-w-[1500px] flex-1 gap-3 overflow-y-auto px-3 py-3 lg:overflow-hidden ${
+          SHOW_SCAFFOLD_UI ? "lg:grid-cols-[17rem_minmax(0,1fr)_10rem]" : "lg:grid-cols-[17rem_minmax(0,1fr)]"
+        }`}
+      >
         {/* ── Left column: profile + life circles ── */}
         <aside className="order-2 flex min-h-0 flex-col gap-3 lg:order-1 lg:overflow-y-auto">
           {/* profile */}
@@ -110,7 +122,7 @@ export function CosmicCommandCenter({
             </span>
           </div>
 
-          <LifeCircles />
+          {SHOW_SCAFFOLD_UI && <LifeCircles />}
         </aside>
 
         {/* ── Center column: timeline + map (map flexes to fill) ── */}
@@ -152,23 +164,25 @@ export function CosmicCommandCenter({
           </div>
         </main>
 
-        {/* ── Right column: interest galaxies ── */}
-        <aside className="order-3 min-h-0 lg:order-3 lg:overflow-y-auto">
-          <div className="cosmic-panel p-3 text-center">
-            <h3 className="mb-3 text-xs font-bold text-cosmic-ink">{t("interestGalaxies")}</h3>
-            <div className="flex flex-row justify-center gap-3 lg:flex-col lg:items-center">
-              {INTERESTS.map((it) => (
-                <div key={it.label} className="flex flex-col items-center gap-1">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cosmic-surface2 text-xl shadow-glow-purple ring-1 ring-cosmic-purple/50">
-                    {it.icon}
-                  </span>
-                  <span className="text-[10px] text-cosmic-muted">{it.label}</span>
-                </div>
-              ))}
+        {/* ── Right column: interest galaxies (scaffold, opt-in only) ── */}
+        {SHOW_SCAFFOLD_UI && (
+          <aside className="order-3 min-h-0 lg:order-3 lg:overflow-y-auto">
+            <div className="cosmic-panel p-3 text-center">
+              <h3 className="mb-3 text-xs font-bold text-cosmic-ink">{t("interestGalaxies")}</h3>
+              <div className="flex flex-row justify-center gap-3 lg:flex-col lg:items-center">
+                {INTERESTS.map((it) => (
+                  <div key={it.label} className="flex flex-col items-center gap-1">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cosmic-surface2 text-xl shadow-glow-purple ring-1 ring-cosmic-purple/50">
+                      {it.icon}
+                    </span>
+                    <span className="text-[10px] text-cosmic-muted">{it.label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[9px] italic text-cosmic-muted/70">{t("scaffoldNote")}</p>
             </div>
-            <p className="mt-3 text-[9px] italic text-cosmic-muted/70">{t("scaffoldNote")}</p>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
 
       {/* ── Bottom toolbar (in-flow, fixed height) ── */}
@@ -223,6 +237,13 @@ export function CosmicCommandCenter({
               💬 {t("askAdvice")}
             </button>
             <Link
+              href="/events/import"
+              data-testid="bulk-import"
+              className="rounded-xl border border-cosmic-border px-3 py-2 text-[11px] font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
+            >
+              🖼️ {t("bulkImport")}
+            </Link>
+            <Link
               href="/events/new"
               data-testid="add-event"
               className="rounded-xl bg-gradient-to-l from-cosmic-blue to-cosmic-purple px-4 py-2 text-[11px] font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5"
@@ -235,7 +256,7 @@ export function CosmicCommandCenter({
 
       {/* Event popup — opened by clicking a timeline node or its hover preview. */}
       {openEvent && (
-        <EventModal event={openEvent} ownerName={ownerName} onClose={() => setOpenId(null)} />
+        <EventModal event={openEvent} ownerName={ownerName} editable={openEvent.isOwn ?? false} onClose={() => setOpenId(null)} />
       )}
     </div>
   );

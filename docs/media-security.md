@@ -38,8 +38,36 @@ enforcement under every circle and every unlisted link.
 - **AC-6 revocable**: `revokeShareLink` + downgrade both stop access within one presign TTL (each GET re-validates).
 - **AC-11 honest copy**: the Arabic revoke copy (`messages/ar.json` → `share.revokeHonestCopy`) states revocation stops future access but cannot recall already-downloaded copies.
 
+## Shared-location precision & EXIF stripping (US-2.2 AC-6)
+
+A coarsened *displayed* location is not enough if the downloadable file still
+carries exact GPS EXIF. Two coordinated controls protect shared (`PUBLIC_UNLISTED`)
+exposure, with the safe state as the **default** (never opt-in):
+
+1. **Displayed location coarsening.** `locationForViewer()`
+   (`src/lib/events/location.ts`) returns *exact* coordinates only to the owner
+   and authenticated Family members (AC-7). Any anonymous viewer reaching the
+   event via a share link gets the location coarsened to a 0.1° (~11 km,
+   city/region) grid, or omitted. `GET /api/share/<token>` returns only this
+   coarsened/omitted value — exact coordinates never leave the server on the
+   shared path.
+2. **Served-file EXIF stripping.** On the `share_link` byte path, `/api/media`
+   does **not** 302-redirect to the original object (which carries EXIF). It
+   fetches the bytes server-side, runs `stripJpegMetadata()`
+   (`src/lib/media/exif-strip.ts`) to drop APP1 (EXIF/XMP) + APPn + COM segments
+   from JPEGs, and streams the result with `Cache-Control: private, no-store` so
+   no edge caches a copy (AC-11). Owner/Family keep the fast 302-to-original
+   path. JPEG is the only allowlisted format carrying camera GPS EXIF; others
+   pass through unchanged.
+
+Telemetry: `shared_location_precision_applied` (reason enum reduced/omitted) and
+`media_exif_stripped` — structural only, **never** a coordinate (G4 + child-data
+minimization).
+
 ## Key files
-- `src/lib/media/access.ts` — `resolveMediaAccess()` byte-authz decision.
+- `src/lib/events/location.ts` — `coarsenCoordinate()` / `locationForViewer()` shared-location precision.
+- `src/lib/media/exif-strip.ts` — dependency-free JPEG metadata stripper for the share-link path.
+- `src/lib/media/access.ts` — `resolveMediaAccess()` byte-authz decision (now also yields `mimeType`).
 - `src/lib/media/share.ts` — create/revoke/resolve share links with bounded expiry.
 - `src/app/api/media/[publicId]/route.ts` — the only path to bytes (authz → 302 presign / 403).
 - `src/app/api/share/[token]/route.ts` — unlisted-link resolution (downgrade/expiry/revoke honored).

@@ -13,6 +13,8 @@ export type EventVM = {
   media: { publicId: string }[];
   lat: number | null;
   lng: number | null;
+  /** True when the viewing account owns this event (may change its circle). */
+  isOwn?: boolean;
 };
 
 /** True when the event carries map coordinates. */

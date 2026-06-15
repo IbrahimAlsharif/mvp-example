@@ -29,6 +29,15 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
     .join("");
 }
 
+/**
+ * Compute a file's content checksum (the same SHA-256 contract the upload uses).
+ * Exposed so bulk import can detect already-imported duplicates BEFORE uploading
+ * (US-1.3 AC-9), keying on content, not filename.
+ */
+export async function computeChecksum(file: File): Promise<string> {
+  return sha256Hex(await file.arrayBuffer());
+}
+
 export type UploadHandle = {
   uploadKey: string;
   onProgress?: (fraction: number) => void;

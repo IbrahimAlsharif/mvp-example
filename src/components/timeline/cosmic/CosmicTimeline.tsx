@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EventVM } from "@/lib/events/view";
 import { hasLocation, hasMedia } from "@/lib/events/view";
+import { granularityToZoom, type Granularity } from "@/lib/timeline/granularity";
 
 /**
  * Custom cosmic timeline (matches the reference command-center look, not
@@ -370,6 +371,24 @@ function ZoomWidget({
       <span className="min-w-[3.25rem] text-center text-[10px] tabular-nums text-cosmic-amber">
         {formatSpan(spanDays, t)}
       </span>
+
+      {/* Granularity presets (US-2.1 AC-2): one click jumps to a year/month/day
+          span while keeping the NOW/center anchor — switching down lands at the
+          same point in time, not at "today". Reaches any granularity in 1 click
+          (well under the <4-click AC-3 bar). */}
+      <span className="mx-1 h-3 w-px bg-cosmic-border" aria-hidden />
+      {(["year", "month", "day"] as Granularity[]).map((g) => (
+        <button
+          key={g}
+          type="button"
+          onClick={() => setZoom(() => granularityToZoom(g))}
+          aria-label={t(`granularity_${g}` as "granularity_year")}
+          title={t(`granularity_${g}` as "granularity_year")}
+          className="rounded-md border border-cosmic-border px-1.5 py-0.5 text-[10px] font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-amber/50"
+        >
+          {t(`granularity_${g}` as "granularity_year")}
+        </button>
+      ))}
     </div>
   );
 }

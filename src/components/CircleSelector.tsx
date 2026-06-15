@@ -63,7 +63,7 @@ export function CircleSelector({
               value={c}
               checked={selected}
               onChange={() => select(c)}
-              className="mt-1 accent-brand"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
             />
             <span className="flex flex-col">
               <span className="font-semibold text-neutral-800">{t(k)}</span>
@@ -72,6 +72,12 @@ export function CircleSelector({
           </label>
         );
       })}
+
+      {/* Announce the current circle to assistive tech, not by color/position
+          alone (US-0.4 AC-9). Polite so it follows the user's selection. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {t("selectedAnnounce", { circle: t(KEY[value]) })}
+      </span>
 
       <PublicWarningDialog
         open={pendingPublic}

@@ -1,5 +1,6 @@
 import type { PrivacyCircle } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { acceptedConnectionsByTier } from "@/lib/connections";
 
 /**
  * THE server-side read-authorization chokepoint for events and their media
@@ -47,15 +48,20 @@ export function decideAccess(
 }
 
 /**
- * Family-membership roster check. US-3.5 owns the actual roster; until then no
- * one is a Family member, so FAMILY events are owner-only. The call site exists
- * so US-3.5 drops in here without touching any enforcement caller (AC-8).
+ * Family-membership roster check, resolved through the Connections social graph
+ * (J9). A viewer is a "Family member" of the owner iff there is an ACCEPTED
+ * connection between them at tier FAMILY. GENERAL-tier connections are NOT
+ * family (they see PUBLIC_UNLISTED only, never FAMILY events), and an absent or
+ * pending connection is never family. ME_ONLY is unaffected — it is gated above
+ * this call and never shared regardless of any connection.
  */
 export async function isFamilyMember(
-  _viewerAccountId: string | null,
-  _ownerAccountId: string,
+  viewerAccountId: string | null,
+  ownerAccountId: string,
 ): Promise<boolean> {
-  return false;
+  if (!viewerAccountId || viewerAccountId === ownerAccountId) return false;
+  const { family } = await acceptedConnectionsByTier(viewerAccountId);
+  return family.has(ownerAccountId);
 }
 
 /** Resolve Family membership and apply the access decision. */
