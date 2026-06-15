@@ -71,6 +71,17 @@ export type ExportedEvent = {
   media: ExportedMedia[];
 };
 
+/** A sealed/pending future capsule, exported in open format (US-4.2 AC-12, G5). */
+export type ExportedCapsule = {
+  id: string;
+  type: string;
+  note: string | null;
+  recipientCircle: string;
+  unlockLocalDay: string;
+  unlockOffsetMin: number;
+  status: string;
+};
+
 export type AccountExport = {
   format: "human-timeline-network/export";
   formatVersion: 1;
@@ -79,6 +90,7 @@ export type AccountExport = {
   eventCount: number;
   manifest: ExportManifest;
   events: ExportedEvent[];
+  capsules: ExportedCapsule[];
 };
 
 /**
@@ -122,12 +134,17 @@ export async function buildAccountExport(accountId: string): Promise<AccountExpo
   // point-in-time snapshot (US-1.4 AC-11): a concurrent create/edit during a
   // long export can't produce a torn read. Read-only — no writes, so the export
   // never mutates, deletes, or locks the source (AC-12, G2).
-  const [account, events] = await prisma.$transaction([
+  const [account, events, capsules] = await prisma.$transaction([
     prisma.account.findUnique({ where: { id: accountId } }),
     prisma.event.findMany({
       where: { accountId, deletedAt: null },
       orderBy: { occurredOn: "asc" },
       include: { media: { where: { deletedAt: null } } },
+    }),
+    // Sealed/pending capsules survive outside the platform too (AC-12, G5).
+    prisma.capsule.findMany({
+      where: { ownerAccountId: accountId, status: { not: "CANCELLED" } },
+      orderBy: { unlockAtMs: "asc" },
     }),
   ]);
   if (!account) throw new Error("account_not_found");
@@ -169,5 +186,14 @@ export async function buildAccountExport(accountId: string): Promise<AccountExpo
     eventCount: exportedEvents.length,
     manifest: buildManifest(exportedEvents),
     events: exportedEvents,
+    capsules: capsules.map((c) => ({
+      id: c.id,
+      type: c.type,
+      note: c.note,
+      recipientCircle: c.recipientCircle,
+      unlockLocalDay: c.unlockLocalDay,
+      unlockOffsetMin: c.unlockOffsetMin,
+      status: c.status,
+    })),
   };
 }

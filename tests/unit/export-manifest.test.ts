@@ -37,6 +37,7 @@ function exp(events: ExportedEvent[]): AccountExport {
       longevityRiskCount: events.flatMap((e) => e.media).filter((m) => m.formatLongevityRisk).length,
     },
     events,
+    capsules: [],
   };
 }
 
