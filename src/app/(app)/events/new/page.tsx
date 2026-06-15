@@ -390,14 +390,20 @@ function NewEventInner() {
         {/* Privacy */}
         <CircleSelector value={circle} onChange={setCircle} hasMedia={hasMedia} />
 
-        <label className="flex items-center gap-3 rounded-2xl border border-white/60 bg-white/40 p-4">
+        {/* Per-item legacy consent (US-4.1). Checking GRANTS; leaving it
+            unchecked is UNSET (treated as no heir access). The hint states
+            plainly that nothing is shared/released now (AC-9). */}
+        <label className="flex items-start gap-3 rounded-2xl border border-white/60 bg-white/40 p-4">
           <input
             type="checkbox"
             checked={legacyConsent}
             onChange={(e) => setLegacyConsent(e.target.checked)}
-            className="h-5 w-5 accent-brand"
+            className="mt-0.5 h-5 w-5 accent-brand"
           />
-          <span className="text-sm text-neutral-700">{t("legacyConsent")}</span>
+          <span className="flex flex-col">
+            <span className="text-sm text-neutral-700">{t("legacyConsent")}</span>
+            <span className="mt-1 text-xs text-neutral-500">{t("legacyConsentHint")}</span>
+          </span>
         </label>
 
         {/* Assertive live region: a save/upload failure is announced to AT, not

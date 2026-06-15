@@ -110,6 +110,7 @@ model Account {
   sentRequests Connection[] @relation("ConnectionRequester")
 
   moderationCases ModerationCase[]
+  capsules        Capsule[]
 }
 
 // An accepted or pending link between two accounts (the social graph edge).
@@ -314,4 +315,67 @@ model ModerationAction {
   createdAt DateTime       @default(now())
 
   @@index([caseId])
+}
+
+// ─── Future Capsules (US-4.2) ─────────────────────────────────────────────────
+// A sealed message/media that unlocks on a future DATE only — no death-trigger,
+// no heir, no posthumous handoff (G9, date-triggered only). Sealed = immutable
+// content + unlock date + recipient. `unlockAtMs` is the absolute instant
+// resolved ONCE at seal time from the owner's seal-time timezone offset, so a
+// later DST/offset change can never move it earlier (AC-7). Pre-unlock content
+// is unreachable (AC-6). Cancel withdraws an unsealed-future capsule (AC-11).
+
+enum CapsuleType {
+  MESSAGE
+  VIDEO
+  LETTER
+  GOAL
+  PLAN
+}
+
+enum CapsuleStatus {
+  SEALED // locked, pending its unlock date
+  UNLOCKED // unlock date reached; content readable by current recipients
+  CANCELLED // owner withdrew it (explicit action, G2)
+  UNDELIVERABLE // unlocked but no valid recipient remains (AC-10)
+}
+
+model Capsule {
+  id                String        @id @default(cuid())
+  ownerAccountId    String
+  owner             Account       @relation(fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  type              CapsuleType
+  note              String? // text content (letter/message/goal/plan)
+  // Recipient is a circle OR a specific already-invited member (US-3.5). At MVP
+  // we target a circle; a removed recipient gains no access at unlock (AC-10).
+  recipientCircle   PrivacyCircle @default(FAMILY)
+  unlockLocalDay    String // yyyy-mm-dd as the owner entered it
+  unlockOffsetMin   Int // owner's seal-time UTC offset (minutes), the authoritative resolver
+  unlockAtMs        BigInt // absolute resolved instant (epoch ms); immune to later tz drift
+  status            CapsuleStatus @default(SEALED)
+  sealedAt          DateTime      @default(now())
+  cancelledAt       DateTime?
+  createdAt         DateTime      @default(now())
+
+  media CapsuleMedia[]
+
+  @@index([ownerAccountId])
+  @@index([status, unlockAtMs])
+}
+
+// Capsule media reuses the durable upload pipeline's content-addressed blobs but
+// is NOT a timeline Media row (a sealed capsule is not on the timeline). Stored
+// content-blind; non-guessable publicId; never served before unlock (AC-6).
+model CapsuleMedia {
+  id             String   @id @default(cuid())
+  capsuleId      String
+  capsule        Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  publicId       String   @unique
+  type           MediaType
+  mimeType       String
+  storageKey     String
+  checksumSha256 String
+  createdAt      DateTime @default(now())
+
+  @@index([capsuleId])
 }
