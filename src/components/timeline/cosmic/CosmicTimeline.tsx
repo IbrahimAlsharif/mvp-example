@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Clock3 } from "lucide-react";
 import type { EventVM } from "@/lib/events/view";
 import { hasLocation, hasMedia } from "@/lib/events/view";
 import { granularityToZoom, type Granularity } from "@/lib/timeline/granularity";
@@ -112,11 +113,14 @@ export function mapCursorToInstant({
   railLeft: number;
   railWidth: number;
   centerX: number;
+  /** The time (ms) at the rail's geometric center — `now` when un-panned, or the
+   *  panned center instant once the user has dragged the axis (FEAT-PPU). */
   now: number;
   spanDays: number;
 }): CursorInstant {
   const halfWidth = railWidth / 2;
-  // Signed distance from NOW as a fraction of a half-width; <0 = screen-left = past.
+  // Signed distance from the center as a fraction of a half-width; <0 = screen-
+  // left = past (relative to the center instant).
   const fromCenter = clamp((clientX - centerX) / halfWidth, -1, 1);
   const isPast = fromCenter < 0;
   // Invert the node/ruler placement `pct = INNER + frac·(OUTER−INNER)` (pct is a
@@ -140,13 +144,16 @@ export function CosmicTimeline({
   nowISO,
   onOpen,
   onAddAt,
+  audienceControl,
 }: {
   events: EventVM[];
   nowISO: string;
   /** Open an event in a popup — fired by clicking a node or its hover preview. */
   onOpen: (id: string) => void;
-  /** Click on the rail at a real instant (ISO) + the pixel anchor of the click. */
-  onAddAt?: (atISO: string, anchor: { xPct: number; up: boolean }) => void;
+  /** Open the centered moment popup at a real instant (ISO). */
+  onAddAt?: (atISO: string) => void;
+  /** Audience filter control (الكل/لي/مَن تحب) rendered in the header (FEAT-BVK). */
+  audienceControl?: React.ReactNode;
 }) {
   const t = useTranslations("cosmic");
 
@@ -169,6 +176,13 @@ export function CosmicTimeline({
   const [zoom, setZoom] = useState(50);
   const spanDays = useMemo(() => zoomToSpanDays(zoom), [zoom]);
 
+  // Pan: a time offset (ms) added to NOW to get the instant at the rail's
+  // geometric center (FEAT-PPU). 0 = centered on NOW; dragging the rail moves it,
+  // and the الآن button resets it. The NOW divider then sits at its real offset
+  // from the panned center (and can scroll off-screen).
+  const [panMs, setPanMs] = useState(0);
+  const centerMs = now + panMs;
+
   // Wheel / trackpad-pinch over the rail zooms the time axis, like an NLE, and
   // we preventDefault so the page doesn't scroll under it. React attaches wheel
   // listeners as PASSIVE, where preventDefault is a no-op (and warns), so we bind
@@ -176,23 +190,39 @@ export function CosmicTimeline({
   // onWheel prop. Scroll up (deltaY < 0) = zoom IN = lower zoom (DAW convention).
   const wheelLock = useRef(0);
 
-  // Split + position by REAL time distance from NOW within the half-window.
+  // Split + position by REAL time distance from the CENTER instant within the
+  // half-window. "Past"/"future" here mean left/right of the panned center, not
+  // of NOW — when un-panned they coincide.
   const { past, future } = useMemo(() => {
     const span = Math.max(1, spanDays) * 86_400_000; // ms in the half-window
     const ev = [...events].sort(
       (a, b) => new Date(a.occurredOn).getTime() - new Date(b.occurredOn).getTime(),
     );
-    const p = ev.filter((e) => new Date(e.occurredOn).getTime() <= now);
-    const f = ev.filter((e) => new Date(e.occurredOn).getTime() > now);
+    const p = ev.filter((e) => new Date(e.occurredOn).getTime() <= centerMs);
+    const f = ev.filter((e) => new Date(e.occurredOn).getTime() > centerMs);
     return {
-      past: layout(p, now, span),
-      future: layout(f, now, span),
+      past: layout(p, centerMs, span),
+      future: layout(f, centerMs, span),
     };
-  }, [events, now, spanDays]);
+  }, [events, centerMs, spanDays]);
 
   // Ruler ticks: evenly spaced marks across each half, labeled with the date at
-  // that offset from NOW so the visible window reads like an editor's timecode.
-  const ticks = useMemo(() => buildTicks(now, spanDays), [now, spanDays]);
+  // that offset from the CENTER instant so the visible window reads like an
+  // editor's timecode.
+  const ticks = useMemo(() => buildTicks(centerMs, spanDays), [centerMs, spanDays]);
+
+  // Where the live NOW divider sits relative to the panned center, as a signed
+  // half-width fraction (0 = center). Maps NOW's day-offset from center through
+  // the same INNER/OUTER placement the nodes use. Beyond the rail edge it's
+  // hidden (the user has panned NOW out of view).
+  const nowMarker = useMemo(() => {
+    const offsetDays = (now - centerMs) / 86_400_000;
+    const frac = offsetDays / Math.max(1, spanDays); // signed, may exceed ±1
+    if (Math.abs(frac) > 1) return null;
+    const side: "past" | "future" = frac <= 0 ? "past" : "future";
+    const pct = INNER + Math.min(1, Math.abs(frac)) * (OUTER - INNER);
+    return { side, pct };
+  }, [now, centerMs, spanDays]);
 
   // ── Hover readout + click-to-add ─────────────────────────────────────────────
   // The rail is a time axis: a cursor X within it maps back to a real instant
@@ -226,26 +256,70 @@ export function CosmicTimeline({
       if (!rail) return null;
       const rect = rail.getBoundingClientRect();
       if (rect.width <= 0) return null;
-      // Measure the cursor against the ACTUAL on-screen position of the NOW
-      // divider rather than assuming it sits at the geometric center — this keeps
-      // the past/future split correct regardless of RTL layout or any rail offset.
-      const nowEl = rail.querySelector<HTMLElement>("[data-now]");
-      const nowRect = nowEl?.getBoundingClientRect();
-      const centerX = nowRect ? nowRect.left + nowRect.width / 2 : rect.left + rect.width / 2;
+      // The rail's GEOMETRIC center represents the (possibly panned) center
+      // instant. With pan the NOW divider moves off-center, so we no longer
+      // measure against it — the geometric center + centerMs define the mapping.
+      const centerX = rect.left + rect.width / 2;
       return mapCursorToInstant({
         clientX,
         railLeft: rect.left,
         railWidth: rect.width,
         centerX,
-        now,
+        now: centerMs,
         spanDays,
       });
     },
-    [now, spanDays],
+    [centerMs, spanDays],
   );
+
+  // ── Drag-to-pan (FEAT-PPU) ──────────────────────────────────────────────────
+  // Dragging the rail horizontally pans the time axis. The rail is RTL with the
+  // PAST on the screen-right, so dragging the content to the RIGHT (positive
+  // deltaX) reveals EARLIER time → the center instant moves into the past
+  // (negative ms). We convert pixels → days using the same half-width ↔ spanDays
+  // scale the nodes use, so a drag moves time at the on-screen rate. A drag past
+  // a small threshold suppresses the click-to-add that would otherwise fire.
+  const drag = useRef<{ startX: number; startPan: number; moved: boolean } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const onRailPointerDown = useCallback((e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest("[data-node]")) return; // nodes handle their own clicks
+    drag.current = { startX: e.clientX, startPan: panMs, moved: false };
+    setDragging(true);
+  }, [panMs]);
+
+  const onRailPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const d = drag.current;
+      if (!d) {
+        const r = instantFromClientX(e.clientX);
+        if (r) setHover(r);
+        return;
+      }
+      const rail = railRef.current;
+      if (!rail) return;
+      const rect = rail.getBoundingClientRect();
+      const halfWidth = rect.width / 2;
+      const dx = e.clientX - d.startX;
+      if (Math.abs(dx) > 4) d.moved = true;
+      // dx>0 (drag right) → past → negative ms. Pixels → days via half-width:span.
+      const msPerPx = (spanDays * 86_400_000) / Math.max(1, halfWidth);
+      setPanMs(d.startPan - dx * msPerPx);
+      setHover(null);
+    },
+    [instantFromClientX, spanDays],
+  );
+
+  const endDrag = useCallback(() => {
+    setDragging(false);
+    // Keep `moved` readable for the click handler this tick, then clear next tick.
+    const d = drag.current;
+    if (d) setTimeout(() => (drag.current = null), 0);
+  }, []);
 
   const onRailMove = useCallback(
     (e: React.MouseEvent) => {
+      if (drag.current) return; // pointer-move drives hover/drag while pressed
       const r = instantFromClientX(e.clientX);
       if (r) setHover(r);
     },
@@ -256,15 +330,27 @@ export function CosmicTimeline({
     (e: React.MouseEvent) => {
       // Ignore clicks that originate on a node button (those select an event).
       if ((e.target as HTMLElement).closest("[data-node]")) return;
+      // Ignore the click that ends a pan-drag (don't open quick-add on a drag).
+      if (drag.current?.moved) return;
       const r = instantFromClientX(e.clientX);
-      // Anchor the popup at the physical cursor position (xPct), so it opens
-      // exactly where the user clicked regardless of the RTL date axis.
-      if (r) {
-        onAddAt?.(r.atISO, { xPct: r.xPct, up: false });
-      }
+      // The popup is centered, so we pass only the chosen instant.
+      if (r) onAddAt?.(r.atISO);
     },
     [instantFromClientX, onAddAt],
   );
+
+  // الآن: snap the axis back to the live NOW (clear any pan). FEAT-PPU.
+  const recenterNow = useCallback(() => setPanMs(0), []);
+
+  // Add-now FAB (FEAT-QVT): an always-visible "+" on the NOW divider opens
+  // quick-add anchored to the CURRENT moment — no rail aiming, no navigation
+  // away. We snap to today's day (the date-only convention the popup saves at)
+  // and anchor the popup at the rail center (xPct 0.5) since NOW sits there.
+  const onAddNow = useCallback(() => {
+    const day = new Date(now);
+    const at = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 12, 0, 0);
+    onAddAt?.(new Date(at).toISOString());
+  }, [now, onAddAt]);
 
   // Keyboard equivalent of clicking the rail (FEAT-SMO F2): the rail is a
   // focusable control, so Enter/Space opens quick-add at NOW (rail center) —
@@ -279,40 +365,77 @@ export function CosmicTimeline({
       if (!rail) return;
       const rect = rail.getBoundingClientRect();
       const r = instantFromClientX(rect.left + rect.width / 2);
-      if (r) onAddAt?.(r.atISO, { xPct: r.xPct, up: false });
+      if (r) onAddAt?.(r.atISO);
     },
     [instantFromClientX, onAddAt],
   );
 
+  // NOW divider placement: centered when un-panned, else offset to its real
+  // position (or null when panned out of view). Same right/left RTL convention
+  // as the ruler/nodes (past = right).
+  const nowPos = nowMarker
+    ? nowMarker.side === "past"
+      ? { right: `calc(50% + ${nowMarker.pct * 100}%)` }
+      : { left: `calc(50% + ${nowMarker.pct * 100}%)` }
+    : null;
+  const panned = panMs !== 0;
+
   return (
     <section className="cosmic-panel relative px-4 py-6 sm:px-8" data-testid="cosmic-timeline">
-      {/* Column titles + in-panel zoom widget */}
+      {/* Column titles */}
       <div className="mb-2 flex items-start justify-between gap-2 text-center">
         <h3 className="flex-1 text-sm font-bold text-cosmic-purple">{t("futureTitle")}</h3>
         <h2 className="px-4 text-base font-extrabold text-cosmic-ink">{t("timelineTitle")}</h2>
         <h3 className="flex-1 text-sm font-bold text-cosmic-blue">{t("pastTitle")}</h3>
       </div>
 
-      <ZoomWidget zoom={zoom} setZoom={setZoom} spanDays={spanDays} t={t} />
+      {/* Audience filter (الكل / لي / مَن تحب) — centered under the title (FEAT-BVK). */}
+      {audienceControl && <div className="mb-1 flex justify-center">{audienceControl}</div>}
 
-      {/* Rail — wheel/pinch zooms the time axis; hover reads out the instant
+      {/* Toolbar: الآن recenter (start) + zoom cluster + المدى label (end), per
+          mockup 2. */}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={recenterNow}
+          aria-label={t("recenterNowHint")}
+          title={t("recenterNowHint")}
+          data-testid="recenter-now"
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-amber/60 ${
+            panned
+              ? "border-cosmic-amber bg-cosmic-amber/15 text-cosmic-amber"
+              : "border-cosmic-border text-cosmic-muted hover:bg-cosmic-surface2"
+          }`}
+        >
+          <Clock3 className="h-3.5 w-3.5" aria-hidden />
+          {t("recenterNow")}
+        </button>
+        <ZoomWidget zoom={zoom} setZoom={setZoom} spanDays={spanDays} t={t} />
+      </div>
+
+      {/* Rail — drag pans the axis; wheel/pinch zooms; hover reads out the instant
           under the cursor; a click on empty axis opens quick-add at that date */}
       <div
         ref={railRef}
-        className="relative mt-3 h-64 cursor-crosshair touch-pan-y select-none rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-blue/60"
+        className={`relative mt-2 h-64 touch-pan-y select-none rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-blue/60 ${
+          dragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
         dir="rtl"
         role="button"
         tabIndex={0}
         aria-label={t("railAddHint")}
+        onPointerDown={onRailPointerDown}
+        onPointerMove={onRailPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
         onMouseMove={onRailMove}
         onMouseLeave={() => setHover(null)}
         onClick={onRailClick}
         onKeyDown={onRailKeyDown}
         data-testid="timeline-rail"
       >
-        {/* Hover readout: day · date · time at the cursor, so the user knows
-            exactly where a click will land (FEAT-FNO). */}
-        {hover && (
+        {/* Hover readout: day · date · time at the cursor (hidden while dragging). */}
+        {hover && !dragging && (
           <HoverReadout atISO={hover.atISO} side={hover.side} pct={hover.pct} hint={t("clickToAddHint")} />
         )}
         {/* time ruler (DAW-style timecode) just above the axis */}
@@ -323,7 +446,7 @@ export function CosmicTimeline({
               className="absolute flex -translate-x-1/2 flex-col items-center"
               style={{ [tk.side === "past" ? "right" : "left"]: `calc(50% + ${tk.pct * 100}%)` }}
             >
-              <span className="text-[8px] tabular-nums text-cosmic-muted">{tk.label}</span>
+              <span className="text-[9px] tabular-nums text-cosmic-muted">{tk.label}</span>
               <span className="mt-0.5 h-1.5 w-px bg-cosmic-border" />
             </div>
           ))}
@@ -332,13 +455,41 @@ export function CosmicTimeline({
         {/* the horizontal axis line */}
         <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-l from-cosmic-purple/40 via-cosmic-border to-cosmic-blue/40" />
 
-        {/* NOW divider (center) */}
-        <div data-now className="absolute left-1/2 top-0 bottom-0 flex -translate-x-1/2 flex-col items-center">
-          <div className="h-full w-[3px] rounded-full bg-gradient-to-b from-cosmic-amber/10 via-cosmic-amber to-cosmic-amber/10 shadow-glow-amber" />
-          <span className="absolute top-1/2 -translate-y-1/2 rounded-md bg-cosmic-amber px-2 py-3 text-[10px] font-black tracking-widest text-cosmic-bg shadow-glow-amber [writing-mode:vertical-rl]">
-            {t("now")}
-          </span>
-        </div>
+        {/* NOW divider — at the live-now position relative to the panned center
+            (centered when un-panned; hidden when panned out of view). */}
+        {nowPos && (
+          <div
+            data-now
+            className="absolute top-0 bottom-0 flex -translate-x-1/2 flex-col items-center"
+            style={nowPos}
+          >
+            <div className="h-full w-[3px] rounded-full bg-gradient-to-b from-cosmic-amber/10 via-cosmic-amber to-cosmic-amber/10 shadow-glow-amber" />
+            <span className="absolute top-3 rounded-md bg-cosmic-amber px-2 py-0.5 text-[10px] font-black tracking-widest text-cosmic-bg shadow-glow-amber">
+              {t("now")}
+            </span>
+            {/* Add-now FAB (FEAT-QVT): "+" on the NOW divider. Opens quick-add at
+                the current moment. `data-node` keeps it off the add-on-rail click. */}
+            {onAddAt && (
+              <button
+                type="button"
+                data-node
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddNow();
+                }}
+                aria-label={t("addNow")}
+                title={t("addNow")}
+                data-testid="add-now-fab"
+                className="group/now absolute top-[calc(50%+3.5rem)] z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-cosmic-amber text-2xl font-black leading-none text-cosmic-bg shadow-glow-amber transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-amber/70"
+              >
+                <span aria-hidden className="-mt-0.5">+</span>
+                <span className="cosmic-inset pointer-events-none absolute top-full mt-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[10px] font-bold text-cosmic-ink opacity-0 transition-opacity group-hover/now:opacity-100 group-focus-visible/now:opacity-100">
+                  {t("addNowHint")}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Past side (start / right in RTL) */}
         {past.map((n, i) => (
@@ -349,6 +500,11 @@ export function CosmicTimeline({
           <Node key={n.e.id} n={n} side="future" up={i % 2 === 0} onOpen={onOpen} t={t} />
         ))}
       </div>
+
+      {/* Hints line (mockup 2): drag to pan • scroll to zoom • click to add. */}
+      <p className="mt-3 text-center text-[11px] text-cosmic-muted" data-testid="rail-hints">
+        {t("railHints")}
+      </p>
     </section>
   );
 }
@@ -403,8 +559,8 @@ function ZoomWidget({
       >
         −
       </button>
-      <span className="min-w-[3.25rem] text-center text-[10px] tabular-nums text-cosmic-amber">
-        {formatSpan(spanDays, t)}
+      <span className="min-w-[5.5rem] text-center text-[10px] tabular-nums text-cosmic-amber" data-testid="range-label">
+        {t("rangeLabel")}: {formatSpan(spanDays, t)}
       </span>
 
       {/* Granularity presets (US-2.1 AC-2): one click jumps to a year/month/day
@@ -435,19 +591,39 @@ type Positioned = { e: EventVM; pct: number; kind: Kind };
 const INNER = 0.04;
 const OUTER = 0.46;
 
+// Minimum horizontal gap (as a fraction of half-width) between two node centers
+// before they'd visibly overlap. A node bubble is ~44px; on a typical rail half
+// (~640px) that's ~3.4%. We fan collisions out by this step so each node keeps
+// its own clickable hit area even when events share an instant.
+const NODE_GAP = 0.035;
+
 /**
  * Position events by their real temporal distance from NOW within the visible
  * half-window (`span`, in ms). frac = |Δt| / span, clamped to [0,1], so the
  * mapping is linear in time: halve `span` (zoom in) and every node moves twice
  * as far from center; out-of-window events clamp to the edge.
+ *
+ * Date-only events are all anchored to noon UTC, so any two on the same day map
+ * to the IDENTICAL pct and would stack into one unclickable pile. After the base
+ * mapping we walk the nodes outward-sorted and push any that land within NODE_GAP
+ * of the previous one further out by NODE_GAP, fanning a same-instant cluster
+ * into a clickable row. The nudge is purely visual (it doesn't change the event's
+ * time) and is clamped to OUTER so a fanned cluster never spills past the edge.
  */
 function layout(side: EventVM[], now: number, span: number): Positioned[] {
-  return side.map((e) => {
-    const dt = Math.abs(new Date(e.occurredOn).getTime() - now);
-    const frac = Math.min(1, dt / span);
-    const out = INNER + frac * (OUTER - INNER);
-    return { e, pct: out, kind: kindOf(e) };
-  });
+  const placed = side
+    .map((e) => {
+      const dt = Math.abs(new Date(e.occurredOn).getTime() - now);
+      const frac = Math.min(1, dt / span);
+      return { e, pct: INNER + frac * (OUTER - INNER), kind: kindOf(e) };
+    })
+    .sort((a, b) => a.pct - b.pct);
+
+  for (let i = 1; i < placed.length; i++) {
+    const minPct = placed[i - 1].pct + NODE_GAP;
+    if (placed[i].pct < minPct) placed[i].pct = Math.min(OUTER, minPct);
+  }
+  return placed;
 }
 
 type Tick = { key: string; side: "past" | "future"; pct: number; label: string };
@@ -467,8 +643,13 @@ function buildTicks(now: number, spanDays: number): Tick[] {
         ? { month: "short", year: "2-digit" }
         : { year: "numeric" };
   const df = new Intl.DateTimeFormat("ar", fmt);
-  // Skip the innermost tick (it sits on NOW and would just repeat today twice).
-  const fracs = [INNER + (OUTER - INNER) * 0.5, OUTER]; // mid, edge
+  // Three evenly spaced marks per side (skip the innermost on-center tick which
+  // would just repeat the center date), so the ruler reads like the mockup.
+  const fracs = [
+    INNER + (OUTER - INNER) * 0.34,
+    INNER + (OUTER - INNER) * 0.67,
+    OUTER,
+  ];
   const ticks: Tick[] = [];
   for (const side of ["past", "future"] as const) {
     const sign = side === "past" ? -1 : 1;
@@ -664,8 +845,15 @@ function Node({
         <span className="mt-2 block text-[10px] font-bold text-cosmic-blue">{t("openEventHint")}</span>
       </span>
 
-      {/* the neon node */}
-      <span className="cosmic-node relative flex h-11 w-11 items-center justify-center text-lg">
+      {/* the node — a SOLID colored disc with a white glyph + ring (mockup 2),
+          replacing the earlier tinted-fill chip. Color comes from the kind glow. */}
+      <span
+        className="relative flex h-11 w-11 items-center justify-center rounded-full text-lg text-white ring-2 ring-white/70 transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:scale-[1.07]"
+        style={{
+          background: `rgb(${glow})`,
+          boxShadow: `0 8px 20px -6px rgba(${glow},0.6)`,
+        }}
+      >
         {KIND_ICON[n.kind]}
       </span>
     </button>

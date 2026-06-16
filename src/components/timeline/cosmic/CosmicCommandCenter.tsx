@@ -8,6 +8,7 @@ import type { PrivacyCircle } from "@prisma/client";
 import type { EventVM } from "@/lib/events/view";
 import { applyFilters, emptyFilters, type TimelineFilters as Filters } from "@/lib/events/filter";
 import { CosmicTimeline } from "./CosmicTimeline";
+import { AudienceFilter } from "./AudienceFilter";
 import { LifeCircles } from "./LifeCircles";
 import { QuickAddPopup } from "./QuickAddPopup";
 import { EventModal } from "./EventModal";
@@ -67,8 +68,11 @@ export function CosmicCommandCenter({
   // away (the server list seeds it; new events prepend). Falls back to the prop
   // on a full navigation/refresh.
   const [localEvents, setLocalEvents] = useState<EventVM[]>(events);
-  // The instant + anchor the user clicked on the rail; non-null opens the popup.
-  const [quickAdd, setQuickAdd] = useState<{ atISO: string; anchor: { xPct: number; up: boolean } } | null>(null);
+  // The instant the user chose (rail click or NOW FAB); non-null opens the
+  // centered moment popup. The popup is centered now, so no pixel anchor is kept.
+  const [quickAdd, setQuickAdd] = useState<{ atISO: string } | null>(null);
+  // The event being edited (FEAT-MRV); non-null opens the popup in edit mode.
+  const [editEvent, setEditEvent] = useState<EventVM | null>(null);
   // Transient success toast shown after a quick-add save (parity with the
   // full-form `?saved=1` confirmation; clears itself after a few seconds).
   const [toast, setToast] = useState<string | null>(null);
@@ -102,6 +106,15 @@ export function CosmicCommandCenter({
     // the freshly-saved event in its popup so the user sees it land.
     setToast(t("saveAnnounce"));
     setOpenId(saved.id);
+  }
+
+  // An edit save replaces the existing event in place (same id) rather than
+  // prepending; close the editor and confirm with the same success toast.
+  function onEditSaved(saved: EventVM) {
+    setLocalEvents((prev) => prev.map((e) => (e.id === saved.id ? { ...e, ...saved } : e)));
+    setEditEvent(null);
+    setOpenId(null);
+    setToast(t("saveAnnounce"));
   }
 
   // Auto-dismiss the success toast a few seconds after it appears.
@@ -183,12 +196,17 @@ export function CosmicCommandCenter({
                 events={filtered}
                 nowISO={nowISO}
                 onOpen={setOpenId}
-                onAddAt={(atISO, anchor) => setQuickAdd({ atISO, anchor })}
+                onAddAt={(atISO) => setQuickAdd({ atISO })}
+                audienceControl={
+                  <AudienceFilter
+                    value={filters.owner}
+                    onChange={(owner) => setFilters((f) => ({ ...f, owner }))}
+                  />
+                }
               />
               {quickAdd && (
                 <QuickAddPopup
                   atISO={quickAdd.atISO}
-                  anchor={quickAdd.anchor}
                   onClose={() => setQuickAdd(null)}
                   onSaved={onQuickAddSaved}
                 />
@@ -309,7 +327,23 @@ export function CosmicCommandCenter({
 
       {/* Event popup — opened by clicking a timeline node or its hover preview. */}
       {openEvent && (
-        <EventModal event={openEvent} ownerName={ownerName} editable={openEvent.isOwn ?? false} onClose={() => setOpenId(null)} />
+        <EventModal
+          event={openEvent}
+          ownerName={ownerName}
+          editable={openEvent.isOwn ?? false}
+          onEdit={(e) => setEditEvent(e)}
+          onClose={() => setOpenId(null)}
+        />
+      )}
+
+      {/* Edit popup (FEAT-MRV) — the same moment popup in edit mode. */}
+      {editEvent && (
+        <QuickAddPopup
+          atISO={editEvent.occurredOn}
+          event={editEvent}
+          onClose={() => setEditEvent(null)}
+          onSaved={onEditSaved}
+        />
       )}
     </div>
   );

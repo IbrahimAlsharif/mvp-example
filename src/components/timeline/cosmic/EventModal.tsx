@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { X } from "lucide-react";
+import { X, Pencil } from "lucide-react";
 import type { PrivacyCircle } from "@prisma/client";
 import { EventCard } from "@/components/EventCard";
 import { ChangeCircleControl } from "./ChangeCircleControl";
@@ -25,12 +25,15 @@ export function EventModal({
   event,
   ownerName,
   editable = false,
+  onEdit,
   onClose,
 }: {
   event: EventVM;
   ownerName: string;
   /** True when the viewer owns this event and may change its circle (US-3.2). */
   editable?: boolean;
+  /** Open the edit popup for this own event (FEAT-MRV); only shown when editable. */
+  onEdit?: (event: EventVM) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("cosmic");
@@ -105,6 +108,18 @@ export function EventModal({
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
+        {editable && onEdit && (
+          <button
+            type="button"
+            onClick={() => onEdit({ ...event, circle })}
+            aria-label={t("momentEditAction")}
+            data-testid="event-modal-edit"
+            className="absolute -top-3 left-8 z-20 flex h-9 items-center gap-1.5 rounded-full border border-cosmic-border bg-cosmic-surface px-3 text-[13px] font-bold text-cosmic-ink shadow-glow-blue transition-colors hover:bg-cosmic-surface2"
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
+            {t("momentEditAction")}
+          </button>
+        )}
         <EventCard event={{ ...event, circle }} ownerName={ownerName} />
         {editable && (
           <ChangeCircleControl

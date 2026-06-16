@@ -85,18 +85,12 @@ export default async function TimelinePage({
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2">
-            <input
-              type="search"
-              placeholder={t("search")}
-              aria-label={t("search")}
-              className="hidden w-56 rounded-xl border border-cosmic-border bg-cosmic-surface/60 px-3 py-2 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-1 focus:ring-cosmic-blue/60 sm:block"
-            />
-            <button
-              type="button"
-              className="rounded-xl border border-cosmic-border px-3 py-2 text-xs font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2"
-            >
-              📅 {t("fullFamilyHistory")}
-            </button>
+            {/* Search + "full family history" were rendered here but wired to
+                nothing — the search input had no value/onChange and the button no
+                onClick, so they looked functional while doing nothing. Hidden
+                until real behavior lands (timeline filters support circles only;
+                there is no text query path yet). Re-add with working handlers
+                rather than restoring these placeholders. */}
             {/* Entry points to the experience journeys (J5/J6/J7/J9). Without
                 these the surfaces are reachable only by typing the URL. */}
             <Link

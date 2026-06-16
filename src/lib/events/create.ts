@@ -104,6 +104,99 @@ export async function createEvent(input: CreateEventInput): Promise<CreateEventR
   }
 }
 
+/**
+ * Edit an existing event's body (US — FEAT-MRV) as an ATOMIC, owner-scoped write.
+ *
+ * Mirrors createEvent's guarantees: in one transaction we re-resolve the media
+ * set — verifying any NEWLY added publicId is PERSISTED, owned, and unattached;
+ * detaching media the user removed; attaching the new ones — then update the
+ * note/date/place/location. Ownership is enforced by scoping every write to
+ * `{ id, accountId, deletedAt: null }`, so a non-owner (or a deleted event) gets
+ * `not_found` with no existence oracle. Circle is intentionally NOT changed here
+ * — that stays on the dedicated changeEventCircle path (its link-revocation
+ * semantics); the edit popup keeps the circle control separate.
+ */
+export type UpdateEventInput = {
+  accountId: string;
+  eventId: string;
+  note?: string | null;
+  occurredOn: Date;
+  mediaPublicIds: string[];
+  location?: { lat: number; lng: number } | null;
+  placeName?: string | null;
+};
+
+export type UpdateEventResult =
+  | { ok: true; event: Event }
+  | { ok: false; reason: "empty_event" | "not_found" | "media_not_persisted" | "media_not_owned" };
+
+export async function updateEvent(input: UpdateEventInput): Promise<UpdateEventResult> {
+  const hasNote = !!input.note && input.note.trim().length > 0;
+  if (!hasNote && input.mediaPublicIds.length === 0) {
+    return { ok: false, reason: "empty_event" }; // note-only OR media required (AC-2)
+  }
+
+  try {
+    const event = await prisma.$transaction(async (tx) => {
+      // Owner-scoped existence check inside the tx (no oracle for non-owners).
+      const existing = await tx.event.findFirst({
+        where: { id: input.eventId, accountId: input.accountId, deletedAt: null },
+        include: { media: { where: { deletedAt: null } } },
+      });
+      if (!existing) throw new NotFound();
+
+      const currentIds = new Set(existing.media.map((m) => m.publicId));
+      const nextIds = new Set(input.mediaPublicIds);
+      const toAttach = input.mediaPublicIds.filter((id) => !currentIds.has(id));
+      const toDetach = [...currentIds].filter((id) => !nextIds.has(id));
+
+      // Verify every NEWLY attached media is persisted, owned, and free — same
+      // invariant as create, so an edit can't smuggle in a foreign/unverified blob.
+      if (toAttach.length > 0) {
+        const media = await tx.media.findMany({ where: { publicId: { in: toAttach }, deletedAt: null } });
+        if (media.length !== toAttach.length) throw new MediaProblem("media_not_persisted");
+        for (const m of media) {
+          if (m.accountId !== input.accountId) throw new MediaProblem("media_not_owned");
+          if (m.status !== "PERSISTED") throw new MediaProblem("media_not_persisted");
+          if (m.eventId && m.eventId !== input.eventId) throw new MediaProblem("media_not_owned");
+        }
+      }
+
+      if (toDetach.length > 0) {
+        // Detach (don't delete) — the blob stays the owner's, just unlinked.
+        await tx.media.updateMany({
+          where: { publicId: { in: toDetach }, eventId: input.eventId },
+          data: { eventId: null },
+        });
+      }
+      if (toAttach.length > 0) {
+        await tx.media.updateMany({
+          where: { publicId: { in: toAttach } },
+          data: { eventId: input.eventId },
+        });
+      }
+
+      return tx.event.update({
+        where: { id: input.eventId },
+        data: {
+          note: hasNote ? input.note!.trim() : null,
+          occurredOn: input.occurredOn,
+          locationLat: input.location?.lat ?? null,
+          locationLng: input.location?.lng ?? null,
+          placeName: input.placeName?.trim() ? input.placeName.trim() : null,
+        },
+      });
+    });
+    return { ok: true, event };
+  } catch (e) {
+    if (e instanceof NotFound) return { ok: false, reason: "not_found" };
+    if (e instanceof MediaProblem) return { ok: false, reason: e.reason };
+    throw e;
+  }
+}
+
+class NotFound extends Error {}
+
 class MediaProblem extends Error {
   constructor(public reason: "media_not_persisted" | "media_not_owned") {
     super(reason);
