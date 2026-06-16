@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { PrivacyCircle } from "@prisma/client";
-import type { TimelineFilters as Filters } from "@/lib/events/filter";
+import { type TimelineFilters as Filters, emptyFilters } from "@/lib/events/filter";
 
 const CIRCLES: { value: PrivacyCircle; icon: string; label: string }[] = [
   { value: "ME_ONLY", icon: "🔒", label: "أنا فقط" },
@@ -51,6 +51,7 @@ export function TimelineFilters({
 
   const dirty =
     filters.circles.size > 0 ||
+    filters.owner !== "all" ||
     filters.from !== null ||
     filters.to !== null ||
     filters.hasMedia !== null ||
@@ -121,9 +122,7 @@ export function TimelineFilters({
         {dirty && (
           <button
             type="button"
-            onClick={() =>
-              onChange({ circles: new Set(), from: null, to: null, hasMedia: null, hasLocation: null })
-            }
+            onClick={() => onChange({ ...emptyFilters, circles: new Set() })}
             data-testid="filter-clear"
             className="ms-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-accent-600 hover:bg-accent-50"
           >

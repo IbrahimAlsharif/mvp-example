@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAccount, Unauthorized } from "@/lib/auth/session";
 import { changeEventCircle } from "@/lib/events/circle-change";
+import { updateEvent } from "@/lib/events/create";
 import { circleTelemetry } from "@/lib/authz/circle";
 import { emit } from "@/lib/telemetry";
 
@@ -65,4 +66,51 @@ export async function PATCH(
     isDowngrade: result.isDowngrade,
     linksRevoked: result.linksRevoked,
   });
+}
+
+/**
+ * Edit an existing event's BODY (FEAT-MRV) — note, day, place, location, and the
+ * attached media set. Owner-only and atomic (see updateEvent). Circle is NOT
+ * changed here; that stays on PATCH (its link-revocation semantics). A non-owner
+ * or missing/deleted event returns 404 with no existence oracle.
+ */
+const EditBody = z.object({
+  note: z.string().nullish(),
+  occurredOn: z.string().datetime(),
+  mediaPublicIds: z.array(z.string()).default([]),
+  location: z.object({ lat: z.number(), lng: z.number() }).nullish(),
+  placeName: z.string().nullish(),
+});
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let account;
+  try {
+    account = await requireAccount();
+  } catch (e) {
+    if (e instanceof Unauthorized) return NextResponse.json({ ok: false }, { status: 401 });
+    throw e;
+  }
+
+  const { id } = await params;
+  const parsed = EditBody.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ ok: false, reason: "bad_request" }, { status: 400 });
+
+  const result = await updateEvent({
+    accountId: account.id,
+    eventId: id,
+    note: parsed.data.note ?? null,
+    occurredOn: new Date(parsed.data.occurredOn),
+    mediaPublicIds: parsed.data.mediaPublicIds,
+    location: parsed.data.location ?? null,
+    placeName: parsed.data.placeName ?? null,
+  });
+
+  if (!result.ok) {
+    // not_found (incl. non-owner) → 404 with no oracle; validation/media → 400.
+    if (result.reason === "not_found") return new NextResponse(null, { status: 404 });
+    return NextResponse.json({ ok: false, reason: result.reason }, { status: 400 });
+  }
+
+  emit("event_edited", {});
+  return NextResponse.json({ ok: true, eventId: result.event.id });
 }

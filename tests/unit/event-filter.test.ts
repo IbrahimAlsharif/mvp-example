@@ -12,6 +12,7 @@ function ev(over: Partial<EventVM> = {}): EventVM {
     media: over.media ?? [],
     lat: over.lat ?? null,
     lng: over.lng ?? null,
+    ...over,
   };
 }
 
@@ -89,6 +90,7 @@ describe("applyFilters", () => {
       ev({ id: "noMedia", circle: "FAMILY", media: [], lat: 1, lng: 2, occurredOn: "2026-06-10T00:00:00.000Z" }),
     ];
     const out = applyFilters(events, {
+      ...emptyFilters,
       circles: circle("FAMILY"),
       from: "2026-06-01",
       to: "2026-06-30",
@@ -96,6 +98,24 @@ describe("applyFilters", () => {
       hasLocation: true,
     });
     expect(out.map((e) => e.id)).toEqual(["match"]);
+  });
+
+  it("filters by owner scope (FEAT-BVK): all / mine / others via isOwn", () => {
+    const events = [
+      ev({ id: "mine", isOwn: true }),
+      ev({ id: "theirs", isOwn: false }),
+      ev({ id: "unknown" }), // isOwn absent → treated as not-own
+    ];
+    expect(applyFilters(events, { ...emptyFilters, owner: "all" }).map((e) => e.id)).toEqual([
+      "mine",
+      "theirs",
+      "unknown",
+    ]);
+    expect(applyFilters(events, { ...emptyFilters, owner: "mine" }).map((e) => e.id)).toEqual(["mine"]);
+    expect(applyFilters(events, { ...emptyFilters, owner: "others" }).map((e) => e.id)).toEqual([
+      "theirs",
+      "unknown",
+    ]);
   });
 });
 

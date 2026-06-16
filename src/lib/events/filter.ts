@@ -7,9 +7,20 @@ import { type EventVM, hasLocation, hasMedia } from "./view";
  * additionally intersects the result with the timeline's visible window
  * (see `withinRange`).
  */
+/**
+ * Owner scope (FEAT-BVK): the mockup's الكل / لي / مَن تحب audience filter.
+ *  - "all"    → everyone's visible events (الكل)
+ *  - "mine"   → only the viewer's own (لي / لحظاتك)
+ *  - "others" → only people-you-love's events (مَن تحب / لحظات مَن تحب)
+ * Backed by EventVM.isOwn, set server-side on the timeline VM.
+ */
+export type OwnerScope = "all" | "mine" | "others";
+
 export type TimelineFilters = {
   // Empty set = no circle filter (show all circles).
   circles: Set<PrivacyCircle>;
+  // Audience scope by ownership. "all" = no owner filter.
+  owner: OwnerScope;
   // Inclusive ISO date bounds (date-only granularity). null = unbounded.
   from: string | null;
   to: string | null;
@@ -19,6 +30,7 @@ export type TimelineFilters = {
 
 export const emptyFilters: TimelineFilters = {
   circles: new Set(),
+  owner: "all",
   from: null,
   to: null,
   hasMedia: null,
@@ -28,6 +40,10 @@ export const emptyFilters: TimelineFilters = {
 export function applyFilters(events: EventVM[], f: TimelineFilters): EventVM[] {
   return events.filter((e) => {
     if (f.circles.size > 0 && !f.circles.has(e.circle)) return false;
+
+    // Owner scope: treat a missing isOwn as not-own (server sets it explicitly).
+    if (f.owner === "mine" && !e.isOwn) return false;
+    if (f.owner === "others" && e.isOwn) return false;
 
     const day = e.occurredOn.slice(0, 10); // YYYY-MM-DD
     if (f.from && day < f.from.slice(0, 10)) return false;

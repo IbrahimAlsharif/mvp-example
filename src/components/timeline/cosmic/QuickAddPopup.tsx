@@ -2,23 +2,30 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import type { PrivacyCircle } from "@prisma/client";
-import { ImagePlus, Film, Mic, FileText, X, Loader2, MapPin } from "lucide-react";
+import { X, Loader2, Clock, ImagePlus, Film, Mic, FileText } from "lucide-react";
 import { CircleSelector } from "@/components/CircleSelector";
+import { MediaCard } from "./MediaCard";
 import { uploadFile, newUploadKey, UploadError } from "@/lib/media/client-upload";
 import { readExif } from "@/lib/media/exif";
 import type { EventVM } from "@/lib/events/view";
 
 /**
- * Quick-add popup for the cosmic timeline (FEAT-FNO).
+ * Moment popup for the cosmic timeline (FEAT-FNO → redesigned in FEAT-JZW).
  *
- * Opened by clicking the rail at a chosen instant. The popup is PRE-FILLED with
- * the date+time the cursor landed on (the click maps a rail position back to a
- * real timestamp), and lets the user adjust the time, add a place, and attach
- * content of any kind — text, images, video, audio, or all together — or just a
- * note. It saves through the same atomic `/api/events` path as the full form,
- * then hands the freshly-saved event back so the timeline can render it directly
- * without a round-trip refresh.
+ * A CENTERED modal titled "لحظة جديدة" opened by the add-now FAB, a rail click,
+ * or (later) an edit action. It shows the moment's day, a large note field, three
+ * media cards (صورة/فيديو/صوت) each offering live capture AND file upload, the
+ * "من يراها؟" privacy row, and footer actions أضف اللحظة + تفاصيل أكثر. It saves
+ * through the same atomic `/api/events` path as the full form, anchoring the day
+ * at noon UTC like every other create path, then hands the freshly-saved event
+ * back so the timeline renders it without a refresh.
+ *
+ * `occurredOn` is DATE-ONLY in this app (no clock time in the schema — the full
+ * form and importer both anchor every event to noon UTC, and the timeline reads
+ * instants in UTC to avoid off-by-one date drift), so this popup captures only the
+ * day, not a time of day.
  */
 
 type Item = {
@@ -29,45 +36,48 @@ type Item = {
   previewUrl?: string;
 };
 
-const ACCEPT = "image/*,video/*,audio/*";
-
 export function QuickAddPopup({
-  /** The instant the user clicked on the rail, as an ISO string. */
+  /** The instant the user chose, as an ISO string (create mode). */
   atISO,
-  /** Pixel anchor of the click within the rail, for popup placement. */
-  anchor,
+  /** When present, the popup is in EDIT mode for this existing moment (FEAT-MRV). */
+  event,
   onClose,
   onSaved,
 }: {
   atISO: string;
-  anchor: { xPct: number; up: boolean };
+  event?: EventVM;
   onClose: () => void;
   onSaved: (event: EventVM) => void;
 }) {
   const t = useTranslations("cosmic");
-  const fileRef = useRef<HTMLInputElement>(null);
-  // Dialog plumbing (FEAT-SMO F6): a labelled, focus-trapped, ESC-closable modal
-  // — matching the sibling EventModal's standard so the two dialogs are
-  // consistent and keyboard/SR-operable.
+  const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const firstFieldRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
-  // Date is fixed by the click; time is editable (defaults to the clicked time).
-  const at = new Date(atISO);
-  const [time, setTime] = useState(() => at.toISOString().slice(11, 16)); // HH:mm (UTC)
+  const isEdit = !!event;
+  // In edit mode the day comes from the event; in create mode from atISO.
+  const at = new Date(isEdit ? event!.occurredOn : atISO);
   const dateLabel = at.toLocaleDateString("ar", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 
-  const [note, setNote] = useState("");
-  const [place, setPlace] = useState("");
-  const [circle, setCircle] = useState<PrivacyCircle>("ME_ONLY"); // G1 default
-  const [items, setItems] = useState<Item[]>([]);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [note, setNote] = useState(isEdit ? (event!.note ?? "") : "");
+  // Circle in edit mode is shown but kept as-is (circle changes have their own
+  // revocation path via PATCH); the body PUT does not change it.
+  const [circle, setCircle] = useState<PrivacyCircle>(isEdit ? event!.circle : "ME_ONLY"); // G1 default
+  const [items, setItems] = useState<Item[]>(
+    isEdit
+      ? event!.media.map((m) => ({ name: m.publicId, type: "image/*", status: "persisted", publicId: m.publicId }))
+      : [],
+  );
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    isEdit && event!.lat != null && event!.lng != null ? { lat: event!.lat, lng: event!.lng } : null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,69 +119,85 @@ export function QuickAddPopup({
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
 
-  async function onFiles(files: FileList | null) {
-    if (!files) return;
-    for (const file of Array.from(files)) {
-      const idx = items.length;
-      const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
-      setItems((prev) => [...prev, { name: file.name, type: file.type, status: "uploading", previewUrl }]);
+  // Upload a File (picked OR live-captured) through the shared media pipeline.
+  // We append a placeholder item, then mark it persisted/failed by matching the
+  // object identity of the entry we added (robust to concurrent uploads, unlike
+  // index math when several captures fire back-to-back).
+  async function uploadOne(file: File) {
+    const entry: Item = {
+      name: file.name,
+      type: file.type,
+      status: "uploading",
+      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    };
+    setItems((prev) => [...prev, entry]);
 
-      // Pull a coordinate from the photo's EXIF if the user hasn't typed a place
-      // pin — keeps the quick-add flow as low-friction as the full form.
-      readExif(file).then((exif) => {
-        if (exif.lat != null && exif.lng != null) setLocation((l) => l ?? { lat: exif.lat!, lng: exif.lng! });
-      });
+    // Pull a coordinate from a photo's EXIF if there's no location yet.
+    readExif(file).then((exif) => {
+      if (exif.lat != null && exif.lng != null) setLocation((l) => l ?? { lat: exif.lat!, lng: exif.lng! });
+    });
 
-      try {
-        const { publicId } = await uploadFile(file, { uploadKey: newUploadKey() });
-        setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, status: "persisted", publicId } : it)));
-      } catch (e) {
-        const reason = e instanceof UploadError ? e.message : "failed";
-        setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, status: "failed" } : it)));
-        setError(reason);
-      }
+    try {
+      const { publicId } = await uploadFile(file, { uploadKey: newUploadKey() });
+      setItems((prev) => prev.map((it) => (it === entry ? { ...it, status: "persisted", publicId } : it)));
+    } catch (e) {
+      const reason = e instanceof UploadError ? e.message : "failed";
+      setItems((prev) => prev.map((it) => (it === entry ? { ...it, status: "failed" } : it)));
+      setError(reason);
     }
   }
 
-  function removeItem(idx: number) {
-    setItems((prev) => prev.filter((_, i) => i !== idx));
+  async function onFiles(files: FileList | null) {
+    if (!files) return;
+    for (const file of Array.from(files)) await uploadOne(file);
+  }
+
+  function removeItem(target: Item) {
+    setItems((prev) => prev.filter((it) => it !== target));
   }
 
   async function onSave() {
     if (!canSave) return;
     setSubmitting(true);
     setError(null);
-    // Compose the absolute instant from the clicked date + the (editable) time.
-    const occurredOn = new Date(`${atISO.slice(0, 10)}T${time}:00.000Z`).toISOString();
-    // Structured place: a typed place is stored on its own placeName column
-    // (J2.4) — no longer folded into the note text.
-    const placeName = place.trim() || null;
+    // Anchor the chosen day at noon UTC — the same date-only convention the full
+    // form and importer use, so an event sits on the same instant from any path
+    // and reads back on the correct day for every viewer. In edit mode the day is
+    // preserved from the event being edited.
+    const dayISO = isEdit ? event!.occurredOn : atISO;
+    const occurredOn = new Date(`${dayISO.slice(0, 10)}T12:00:00.000Z`).toISOString();
     const cleanNote = note.trim() || null;
+    const placeName = isEdit ? (event!.placeName ?? null) : null;
 
     try {
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          note: cleanNote,
-          occurredOn,
-          circle,
-          legacyConsent: false,
-          mediaPublicIds: persistedIds,
-          location,
-          placeName,
-          submitKey: newUploadKey(),
-        }),
-      });
+      const res = isEdit
+        ? await fetch(`/api/events/${event!.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ note: cleanNote, occurredOn, mediaPublicIds: persistedIds, location, placeName }),
+          })
+        : await fetch("/api/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              note: cleanNote,
+              occurredOn,
+              circle,
+              legacyConsent: false,
+              mediaPublicIds: persistedIds,
+              location,
+              placeName,
+              submitKey: newUploadKey(),
+            }),
+          });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
         setError("save_failed");
         setSubmitting(false);
         return;
       }
-      // Hand the saved event straight back so the rail renders it immediately.
       onSaved({
-        id: data.eventId,
+        id: isEdit ? event!.id : data.eventId,
         note: cleanNote,
         occurredOn,
         circle,
@@ -179,6 +205,7 @@ export function QuickAddPopup({
         lat: location?.lat ?? null,
         lng: location?.lng ?? null,
         placeName,
+        isOwn: true,
       });
     } catch {
       setError("save_failed");
@@ -186,171 +213,143 @@ export function QuickAddPopup({
     }
   }
 
-  // Desktop: place the card on the opposite vertical side from where a node
-  // bubble would sit, clamped horizontally so it never spills off the rail
-  // edges. Exposed as CSS vars so the rail-anchored position applies ONLY at
-  // sm+ (see the sm: utilities below); on phones the dialog is a fixed,
-  // scrollable bottom sheet instead, so its Save button is always reachable
-  // (FEAT-SMO F4).
-  const anchorStyle = {
-    "--qa-left": `clamp(9rem, ${anchor.xPct * 100}%, calc(100% - 9rem))`,
-    "--qa-y": "calc(50% + 3.5rem)",
-  } as React.CSSProperties;
-  // On desktop, open above the click point (when a node bubble sits below) or
-  // below it (default) — mirrors the prior anchor.up behavior.
-  const anchorEdge = anchor.up ? "sm:[inset-block-end:var(--qa-y)]" : "sm:[inset-block-start:var(--qa-y)]";
+  // "تفاصيل أكثر" → the full create form, carrying the chosen day so the user
+  // doesn't lose their place. It's an escape hatch to the richer form, not a
+  // handoff of in-progress note/media state.
+  function onMoreDetails() {
+    router.push(`/events/new?on=${atISO.slice(0, 10)}`);
+  }
 
   return (
     <>
-      {/* click-away scrim — dimmed on mobile (it's a modal sheet), transparent
-          on desktop (keeps the timeline visible behind the rail-anchored card) */}
+      {/* dimmed backdrop — a centered modal on all viewports */}
       <div
-        className="fixed inset-0 z-20 bg-cosmic-bg/50 backdrop-blur-sm sm:absolute sm:bg-transparent sm:backdrop-blur-none"
+        className="fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-sm"
         onClick={onClose}
         data-testid="quick-add-scrim"
       />
-      <div
-        ref={dialogRef}
-        className={`cosmic-panel fixed inset-x-3 bottom-3 z-30 max-h-[85vh] w-auto overflow-y-auto rounded-2xl p-3 shadow-glow-blue sm:absolute sm:inset-x-auto sm:bottom-auto sm:max-h-none sm:w-[19rem] sm:-translate-x-1/2 sm:overflow-visible sm:[inset-inline-start:var(--qa-left)] ${anchorEdge}`}
-        style={anchorStyle}
-        dir="rtl"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        data-testid="quick-add-popup"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 id={titleId} className="text-base font-extrabold text-cosmic-ink">
-              {t("quickAddTitle")}
-            </h3>
-            <p className="truncate text-[13px] text-cosmic-muted">
-              {t("quickAddAt")} {dateLabel}
-            </p>
-          </div>
-          <button
-            ref={firstFieldRef}
-            type="button"
-            onClick={onClose}
-            aria-label={t("quickAddCancel")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-cosmic-border text-cosmic-muted transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-        </div>
-
-        {/* time */}
-        <label className="mb-2 flex items-center gap-2">
-          <span className="w-12 shrink-0 text-[13px] font-bold text-cosmic-muted">{t("quickAddTime")}</span>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="min-h-[44px] flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-2 text-sm tabular-nums text-cosmic-ink focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-            data-testid="quick-add-time"
-          />
-        </label>
-
-        {/* place */}
-        <label className="mb-2 flex items-center gap-2">
-          <span className="flex w-12 shrink-0 items-center gap-1 text-[13px] font-bold text-cosmic-muted">
-            <MapPin className="h-3.5 w-3.5" aria-hidden /> {t("quickAddPlace")}
-          </span>
-          <input
-            value={place}
-            onChange={(e) => setPlace(e.target.value)}
-            placeholder={t("quickAddPlacePlaceholder")}
-            className="min-h-[44px] flex-1 rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2 py-2 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-            data-testid="quick-add-place"
-          />
-        </label>
-
-        {/* content: note */}
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          placeholder={t("quickAddNotePlaceholder")}
-          data-testid="quick-add-note"
-          className="mb-2 w-full resize-none rounded-lg border border-cosmic-border bg-cosmic-surface/60 px-2.5 py-2 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-        />
-
-        {/* content: media (images / video / audio — any kind, or all) */}
-        <input
-          ref={fileRef}
-          type="file"
-          accept={ACCEPT}
-          multiple
-          className="hidden"
-          onChange={(e) => onFiles(e.target.files)}
-          data-testid="quick-add-files"
-        />
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="mb-2 flex min-h-[44px] w-full items-center justify-center gap-3 rounded-lg border border-dashed border-cosmic-border py-2 text-[13px] font-bold text-cosmic-muted transition-colors hover:bg-cosmic-surface2 hover:text-cosmic-ink focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-          data-testid="quick-add-media-btn"
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
+        <div
+          ref={dialogRef}
+          className="cosmic-panel relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl p-5 shadow-glow-blue"
+          dir="rtl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          data-testid="quick-add-popup"
+          onClick={(e) => e.stopPropagation()}
         >
-          <ImagePlus className="h-4 w-4" aria-hidden />
-          <Film className="h-4 w-4" aria-hidden />
-          <Mic className="h-4 w-4" aria-hidden />
-          <span>{t("quickAddMediaHint")}</span>
-        </button>
+          {/* header: close (left) + title */}
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <button
+              ref={firstFieldRef}
+              type="button"
+              onClick={onClose}
+              aria-label={t("quickAddCancel")}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-cosmic-muted transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+            <h3 id={titleId} className="text-xl font-extrabold text-cosmic-ink">
+              {isEdit ? t("momentEditTitle") : t("momentNewTitle")}
+            </h3>
+          </div>
 
-        {items.length > 0 && (
-          <ul className="mb-2 flex flex-wrap gap-1.5" data-testid="quick-add-items">
-            {items.map((it, i) => (
-              <li
-                key={i}
-                className="group relative flex items-center gap-1 rounded-md border border-cosmic-border bg-cosmic-surface/60 px-1.5 py-1 text-[10px] text-cosmic-ink"
-              >
-                <KindIcon type={it.type} />
-                <span className="max-w-[5rem] truncate">{it.name}</span>
-                {it.status === "uploading" && <Loader2 className="h-3 w-3 animate-spin text-cosmic-muted" aria-hidden />}
-                {it.status === "failed" && <span className="text-rose-400">!</span>}
-                <button
-                  type="button"
-                  onClick={() => removeItem(i)}
-                  aria-label={t("removeMedia")}
-                  className="text-cosmic-muted hover:text-rose-400"
-                >
-                  <X className="h-3 w-3" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* circle */}
-        <div className="mb-2">
-          <CircleSelector value={circle} onChange={setCircle} hasMedia={items.length > 0} />
-        </div>
-
-        {error && (
-          <p className="mb-2 text-[13px] font-bold text-rose-400" role="alert">
-            {t("quickAddFailed")}
+          {/* date row with clock icon */}
+          <p className="mb-4 flex items-center justify-center gap-1.5 text-[13px] font-bold text-cosmic-blue">
+            <Clock className="h-4 w-4" aria-hidden />
+            <span className="tabular-nums">{dateLabel}</span>
           </p>
-        )}
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={!canSave}
-            data-testid="quick-add-save"
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-cosmic-blue px-3 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60 disabled:translate-y-0 disabled:opacity-40"
-          >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            {submitting ? t("quickAddSaving") : t("quickAddSave")}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] rounded-xl border border-cosmic-border px-3 py-2.5 text-sm font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
-          >
-            {t("quickAddCancel")}
-          </button>
+          {/* note */}
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder={t("momentNotePlaceholder")}
+            data-testid="quick-add-note"
+            className="mb-4 w-full resize-none rounded-2xl border border-cosmic-border bg-cosmic-surface/60 px-3.5 py-3 text-sm text-cosmic-ink placeholder:text-cosmic-muted focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
+          />
+
+          {/* media cards: each offers live capture AND upload */}
+          <p className="mb-2 text-center text-[12px] text-cosmic-muted">{t("momentMediaSubtitle")}</p>
+          <div className="mb-3 grid grid-cols-2 gap-2" data-testid="quick-add-media">
+            <MediaCard kind="image" onCapturedFile={uploadOne} onFiles={onFiles} />
+            <MediaCard kind="video" onCapturedFile={uploadOne} onFiles={onFiles} />
+            <div className="col-span-2">
+              <MediaCard kind="audio" onCapturedFile={uploadOne} onFiles={onFiles} />
+            </div>
+          </div>
+
+          {/* attached items */}
+          {items.length > 0 && (
+            <ul className="mb-3 flex flex-wrap gap-1.5" data-testid="quick-add-items">
+              {items.map((it, i) => (
+                <li
+                  key={i}
+                  className="group relative flex items-center gap-1 rounded-md border border-cosmic-border bg-cosmic-surface/60 px-1.5 py-1 text-[10px] text-cosmic-ink"
+                >
+                  <KindIcon type={it.type} />
+                  <span className="max-w-[5rem] truncate">{it.name}</span>
+                  {it.status === "uploading" && <Loader2 className="h-3 w-3 animate-spin text-cosmic-muted" aria-hidden />}
+                  {it.status === "failed" && <span className="text-rose-500">!</span>}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(it)}
+                    aria-label={t("removeMedia")}
+                    className="text-cosmic-muted hover:text-rose-500"
+                  >
+                    <X className="h-3 w-3" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* who sees it? */}
+          <p className="mb-1.5 text-[13px] font-bold text-cosmic-muted">{t("momentWhoSees")}</p>
+          <div className="mb-4">
+            <CircleSelector value={circle} onChange={setCircle} hasMedia={items.length > 0} variant="pills" />
+          </div>
+
+          {error && (
+            <p className="mb-2 text-[13px] font-bold text-rose-500" role="alert">
+              {t("quickAddFailed")}
+            </p>
+          )}
+
+          {/* footer actions — تفاصيل أكثر is a create-only escape hatch to the
+              full form; in edit mode we show a plain cancel instead. */}
+          <div className="flex items-center gap-2">
+            {isEdit ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-[48px] rounded-2xl border border-cosmic-border px-4 py-2.5 text-sm font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
+              >
+                {t("quickAddCancel")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onMoreDetails}
+                data-testid="quick-add-more-details"
+                className="min-h-[48px] rounded-2xl border border-cosmic-border px-4 py-2.5 text-sm font-bold text-cosmic-ink transition-colors hover:bg-cosmic-surface2 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60"
+              >
+                {t("momentMoreDetails")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={!canSave}
+              data-testid="quick-add-save"
+              className="flex min-h-[48px] flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-l from-cosmic-blue to-cosmic-purple px-4 py-2.5 text-sm font-bold text-white shadow-glow-blue transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cosmic-blue/60 disabled:translate-y-0 disabled:opacity-40"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {submitting ? t("quickAddSaving") : isEdit ? t("momentSaveBtn") : t("momentAddBtn")}
+            </button>
+          </div>
         </div>
       </div>
     </>

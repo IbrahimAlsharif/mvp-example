@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { PrivacyCircle } from "@prisma/client";
 import {
@@ -47,12 +47,18 @@ export default function NewEventPage() {
 function NewEventInner() {
   const t = useTranslations("event");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [note, setNote] = useState("");
   // Default to the user's LOCAL date, not UTC. `new Date().toISOString()` is
   // UTC, so just after local midnight in a positive-offset timezone it yields
   // yesterday — silently dating a new memory to the wrong day. dayKey() uses
-  // local Y/M/D, matching how the timeline groups events.
-  const [date, setDate] = useState(() => dayKey(new Date()));
+  // local Y/M/D, matching how the timeline groups events. When the quick-add
+  // popup hands off via "تفاصيل أكثر" (?on=YYYY-MM-DD), honor that chosen day so
+  // the user keeps the date they picked on the timeline.
+  const [date, setDate] = useState(() => {
+    const on = searchParams.get("on");
+    return on && /^\d{4}-\d{2}-\d{2}$/.test(on) ? on : dayKey(new Date());
+  });
   const [circle, setCircle] = useState<PrivacyCircle>("ME_ONLY"); // G1 default
   const [legacyConsent, setLegacyConsent] = useState(false);
   const [items, setItems] = useState<Item[]>([]);

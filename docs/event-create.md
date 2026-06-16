@@ -43,6 +43,32 @@ and is never hard-deleted by a system event.
   first; reads hit Postgres so a just-saved event is fresh on any session
   (AC-15). Media render through the authz-gated `/api/media/<publicId>`.
 
+## Editing an existing moment (FEAT-MRV)
+
+A created moment can be EDITED — note, day, place, location, and the attached
+media set — via `updateEvent` in
+[src/lib/events/create.ts](../src/lib/events/create.ts), exposed as **`PUT
+/api/events/[id]`** ([route](../src/app/api/events/[id]/route.ts)). It mirrors
+create's guarantees:
+
+- **Owner-scoped + atomic** — the whole edit (media re-attach + body update) runs
+  in one transaction scoped to `{ id, accountId, deletedAt: null }`. A non-owner
+  or missing/deleted event returns `not_found` → **404 with no existence oracle**.
+- **Media re-resolution** — media the user removed is *detached* (not deleted, the
+  blob stays theirs); newly added media is verified PERSISTED + owned + unattached
+  before attaching, so an edit can't smuggle in a foreign/unverified blob.
+- **Circle is NOT changed here** — that stays on the dedicated `PATCH` circle path
+  (its link-revocation semantics); the edit popup keeps the circle control
+  separate.
+
+UI: the same moment popup runs in **edit mode** when given an `event` prop (title
+تعديل اللحظة, button حفظ, prefilled fields), opened from an **Edit** button on the
+`EventModal` for own events. The rail updates the event in place on save.
+
+Tests: `tests/integration/event-update.test.ts` (atomic body update; attach/detach
+media; refuse cross-account edit; reject foreign media; reject empty edit) and
+`tests/e2e/edit-moment.spec.ts` (open → Edit → change note → save → reflected).
+
 ## Verified end-to-end
 The keystone Playwright journey (`tests/e2e/full-journey.spec.ts`) proves:
 signup → upload photo (confirmed only after persist) → create a Me-Only event →

@@ -3,6 +3,52 @@
 Add an event directly from the cosmic timeline by clicking the rail at the date
 you want, with a live hover readout so you always know where a click will land.
 
+## Add a moment NOW — the FAB (FEAT-QVT)
+
+Clicking the rail requires aiming at a date, and the bottom-toolbar
+"+ إضافة حدث جديد" button navigates away to the full `/events/new` form. For the
+most common case — _capture what's happening right now_ — there is an
+always-visible amber **"+" FAB anchored on the NOW divider**, just below the
+"الآن" label.
+
+- **One tap, no aiming** — it opens the same quick-add popup, pre-anchored to the
+  **current day** (snapped to noon UTC, the app's date-only convention), centered
+  on the rail. No navigation away.
+- **Discoverable + accessible** — it is always on screen whenever the rail is
+  shown, carries an `aria-label` ("أضف لحظة الآن"), is keyboard-operable, and
+  reveals a hint bubble on hover/focus. `data-testid="add-now-fab"`.
+- **Only on a populated rail** — the rail (and thus the FAB) renders once ≥1 event
+  exists; the empty-timeline state has its own prominent "add first memory" CTA,
+  so there is no add-affordance gap.
+
+The FAB reuses the `onAddAt(atISO)` callback via an `onAddNow` helper in
+`CosmicTimeline.tsx` — so the popup, optimistic render, and success toast paths
+are identical to the click-to-add flow below.
+
+## The redesigned moment popup (FEAT-JZW)
+
+Every entry point (NOW FAB, rail click) now opens the same **centered modal**
+titled **لحظة جديدة** (mockup 1), replacing the old rail-anchored card. It holds:
+
+- A **clock + date row** for the chosen day (date-only, noon-UTC anchored).
+- A large **note field** (ماذا حدث في هذه اللحظة؟).
+- Three **media cards** — صورة / فيديو / صوت — each offering BOTH:
+  - **live capture** (التقاط for a photo, تسجيل for audio/video) via the capture
+    lib ([capture-recording.md](./capture-recording.md)), and
+  - **file upload** (رفع) via the existing `uploadFile` path.
+  Both converge on one upload pipeline: a captured still or stopped recording is
+  uploaded exactly like a picked file. While recording, a card shows an `mm:ss`
+  readout with stop/cancel (and a live preview for video); a capture non-grant
+  shows an inline "use upload instead" hint — never a dead-end.
+- A **من يراها؟** privacy row rendered as icon **pills** (the `pills` variant of
+  `CircleSelector`), أنا فقط by default; the AC-4 public-media warning still fires.
+- Footer actions: **أضف اللحظة** (save) and **تفاصيل أكثر**, which hands off to the
+  full `/events/new` form carrying the chosen day via `?on=YYYY-MM-DD`.
+
+`data-testid`s: `quick-add-popup`, `quick-add-note`, `quick-add-save`,
+`quick-add-more-details`, `media-card-{image,video,audio}` (+ `-capture` /
+`-upload` / `-stop`), `circle-pill-{me_only,family,public_unlisted,public}`.
+
 ## What the user sees
 
 - **Hover readout** — moving the mouse along the rail shows a floating tooltip
@@ -26,10 +72,10 @@ you want, with a live hover readout so you always know where a click will land.
 
 | Concern | Where |
 |---------|-------|
-| Rail position ↔ real instant mapping, hover readout, click→`onAddAt` | [src/components/timeline/cosmic/CosmicTimeline.tsx](../src/components/timeline/cosmic/CosmicTimeline.tsx) |
+| Rail position ↔ real instant mapping, hover readout, click→`onAddAt`, NOW FAB (`onAddNow`) | [src/components/timeline/cosmic/CosmicTimeline.tsx](../src/components/timeline/cosmic/CosmicTimeline.tsx) |
 | Quick-add popup (time/place/content/circle, upload, save) | [src/components/timeline/cosmic/QuickAddPopup.tsx](../src/components/timeline/cosmic/QuickAddPopup.tsx) |
 | Wiring: open popup, optimistic render, re-seed on refresh | [src/components/timeline/cosmic/CosmicCommandCenter.tsx](../src/components/timeline/cosmic/CosmicCommandCenter.tsx) |
-| Arabic labels (`cosmic.quickAdd*`, `cosmic.clickToAddHint`) | [messages/ar.json](../messages/ar.json) |
+| Arabic labels (`cosmic.quickAdd*`, `cosmic.clickToAddHint`, `cosmic.addNow`, `cosmic.addNowHint`) | [messages/ar.json](../messages/ar.json) |
 
 ### Position ↔ time
 
